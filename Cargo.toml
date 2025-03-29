@@ -14,7 +14,7 @@ serde = { version = "1.0.218", features = ["derive"] }
 serde_json = "1.0.140"
 dirs = "6.0.0"
 tap = "1.0.1"
-clap = { version = "4.5.31", features = ["cargo", "derive"] }
+clap = { version = "4.5.34", features = ["cargo", "derive"] }
 cli-log = "2.1.0"
 strum = "0.27.1"
 strum_macros = "0.27.1"
