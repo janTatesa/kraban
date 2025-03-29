@@ -1,0 +1,26 @@
+app_color = "magenta"
+collapse_unfocused_tabs = false
+show_key_hints = true
+
+
+[[column]]
+name = "Backlog"
+color = "red"
+tab = 0
+
+[[column]]
+name = "Doing"
+color = "yellow"
+tab = 0
+
+[[column]]
+name = "Review"
+color = "green"
+tab = 0
+
+[[column]]
+name = "Done"
+color = "blue"
+tab = 1
+# Whether to prevent tasks being added deleted or modified in the column (they can still be moved to a different column)
+immutable = true

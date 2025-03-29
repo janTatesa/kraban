@@ -1,0 +1,132 @@
+use crossterm::event::{KeyCode, KeyEvent};
+use ratatui::{
+    buffer::Buffer,
+    layout::Rect,
+    style::Stylize,
+    text::{Line, Span, ToSpan},
+    widgets::StatefulWidget,
+};
+use tap::Tap;
+
+use crate::app::{config::Config, state::CurrentList, Context};
+
+use super::{
+    keyhints::KeyHints,
+    list::ListState,
+    open_prompt,
+    prompt::{ChangePriorityPrompt, DeleteConfirmation, InputAction, InputPrompt},
+    task::TasksView,
+    widgets::list_widget,
+    Action, Component, Item, View,
+};
+
+#[derive(Debug, Clone, Copy)]
+pub struct ProjectsView(ListState);
+
+impl ProjectsView {
+    pub fn new(max_index: Option<usize>) -> Self {
+        Self(ListState::new(max_index))
+    }
+}
+
+impl View for ProjectsView {
+    fn item(&self) -> Item {
+        Item::Project
+    }
+
+    fn current_list<'a>(&self, _config: &'a Config) -> CurrentList<'a> {
+        CurrentList::Projects(self.0.focused_item())
+    }
+
+    fn handle_action(&mut self, action: &Action, _context: Context) {
+        match action {
+            Action::ShrinkList => self.0.decrement_size(),
+            Action::New(_) => self.0.increment_size(),
+            Action::SwitchToIndex(index) => self.0.switch_to_index(*index),
+            _ => {}
+        }
+    }
+}
+
+fn project_title(context: Context, index: usize) -> String {
+    context.state.projects()[index].title.clone()
+}
+
+impl Component for ProjectsView {
+    fn on_key(&mut self, key_event: KeyEvent, context: Context) -> Option<Action> {
+        match key_event.code {
+            KeyCode::Delete => self.0.focused_item().and_then(|index| {
+                open_prompt(DeleteConfirmation {
+                    name: project_title(context, index),
+                    item: Item::Project,
+                })
+            }),
+            KeyCode::Char('n') => open_prompt(InputPrompt::new(
+                context,
+                InputAction::New,
+                "Enter new project name".to_string(),
+            )),
+            KeyCode::Char('p') => self
+                .0
+                .focused_item()
+                .and_then(|_| open_prompt(ChangePriorityPrompt::new())),
+            KeyCode::Char('r') => self.0.focused_item().and_then(|index| {
+                open_prompt(InputPrompt::new(
+                    context,
+                    InputAction::Rename,
+                    project_title(context, index),
+                ))
+            }),
+            KeyCode::Enter => self
+                .0
+                .focused_item()
+                .map(|project| Action::SwitchToView(Box::new(TasksView::new(project, context)))),
+            _ => self.0.on_key(key_event, context),
+        }
+    }
+
+    fn key_hints(&self, context: Context) -> KeyHints {
+        self.0.key_hints(context).tap_mut(|v| {
+            v.extend([
+                ("Delete", "Delete"),
+                ("n", "New"),
+                ("p", "Set priority"),
+                ("r", "Rename"),
+                ("Enter", "View project tasks"),
+            ])
+        })
+    }
+
+    fn render(&self, area: Rect, buf: &mut Buffer, context: Context) {
+        let items =
+            (0..context.state.projects().len()).map(|index| display_project(index, context));
+        let list = list_widget(items);
+        list.render(area, buf, &mut self.0.into());
+    }
+}
+
+fn display_project(index: usize, context: Context) -> Line {
+    let project = &context.state.projects()[index];
+    let mut spans = Vec::with_capacity(1);
+    if let Some(priority) = project.priority {
+        spans.extend([Span::raw("["), Span::from(priority), Span::raw("] ")]);
+    }
+    let mut column_numbers = vec!["[".to_span()];
+    for column in &context.config.all_columns {
+        let len = project.columns.get(&column.name).len();
+        if len == 0 {
+            continue;
+        }
+        column_numbers.push(len.to_string().fg(column.color).bold());
+        column_numbers.push(" ".into());
+        column_numbers.push(column.name.clone().fg(column.color).bold());
+        column_numbers.push(" ".into());
+    }
+    column_numbers.pop();
+    column_numbers.push("] ".to_span());
+    if column_numbers.len() > 1 {
+        spans.extend(column_numbers);
+    }
+    spans.push(project.title.to_span());
+    Line::from(spans)
+}
