@@ -1,4 +1,4 @@
-use crate::app::{Context, state::CurrentList};
+use crate::app::Context;
 use crossterm::event::{KeyCode, KeyEvent, KeyModifiers};
 use keyhints::KeyHints;
 use ratatui::{
@@ -13,7 +13,7 @@ use tap::Tap;
 use widgets::main_block;
 
 use super::{
-    Action, Item, Ui,
+    Action, Ui,
     keyhints::{self, KeyHintsWidget},
     prompt::Prompt,
     widgets::{self, block_widget},
