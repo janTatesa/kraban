@@ -10,11 +10,11 @@ edition = "2024"
 crossterm = "0.28.1"
 ratatui = { version = "0.29.0", features = ["macros", "serde"] }
 color-eyre = "0.6.3"
-serde = { version = "1.0.218", features = ["derive"] }
-serde_json = "1.0.139"
+serde = { version = "1.0.219", features = ["derive"] }
+serde_json = "1.0.140"
 dirs = "6.0.0"
 tap = "1.0.1"
-clap = { version = "4.5.31", features = ["cargo", "derive"] }
+clap = { version = "4.5.34", features = ["cargo", "derive"] }
 cli-log = "2.1.0"
 strum = "0.27.1"
 strum_macros = "0.27.1"
