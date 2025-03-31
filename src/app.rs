@@ -63,11 +63,15 @@ impl App {
     }
 
     fn handle_crossterm_events(&mut self) -> Result<()> {
-        if let Event::Key(key) = event::read()? {
-            if key.kind == KeyEventKind::Press {
-                debug!("Handling key event {:?}", key);
-                self.on_key(key)?
-            }
+        if let Event::Key(
+            key @ KeyEvent {
+                kind: KeyEventKind::Press,
+                ..
+            },
+        ) = event::read()?
+        {
+            debug!("Handling key event {:?}", key);
+            self.on_key(key)?
         }
         Ok(())
     }

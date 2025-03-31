@@ -1,18 +1,20 @@
+//TODO: Maybe this should be a submodule of project
 mod defaultmap;
+
 mod migration;
+mod project;
 mod sorted_vec;
-
-use std::{fs, io::ErrorKind, path::PathBuf};
-
-use cli_log::{debug, info};
-use color_eyre::Result;
-use defaultmap::DefaultMap;
-use derivative::Derivative;
-use serde::{Deserialize, Serialize};
-use serde_json::{json, Value};
-use sorted_vec::SortedVec;
+mod task;
 
 use super::ui::Action;
+use cli_log::info;
+use color_eyre::Result;
+pub use project::Project;
+use serde::{Deserialize, Serialize};
+use serde_json::{Value, json};
+use sorted_vec::SortedVec;
+use std::{fs, io::ErrorKind, path::PathBuf};
+pub use task::Task;
 
 #[derive(Serialize, Deserialize, Default)]
 pub struct State {
@@ -75,78 +77,12 @@ impl State {
         }
     }
 
-    fn handle_task_action(
-        &mut self,
-        action: Action,
-        project: usize,
-        column: &str,
-        index: Option<usize>,
-    ) -> Option<Action> {
-        let list = self.projects[project].columns.get_mut(column.to_string());
-        match action {
-            Action::Delete => {
-                debug!("{:?}", index);
-                list.remove(index?);
-                Some(Action::ShrinkList)
-            }
-            Action::ChangePriority(priority) => Self::modifing_action(index, list, |task| Task {
-                priority: Some(priority),
-                ..task
-            }),
-            Action::New(title) => Some(Action::SwitchToIndex(list.push(Task {
-                title,
-                ..Task::default()
-            }))),
-            Action::Rename(title) => {
-                Self::modifing_action(index, list, |task| Task { title, ..task })
-            }
-            Action::MoveToColumn(column) => {
-                let task = list.remove(index?);
-                self.projects[project].columns.get_mut(column).push(task);
-                Some(Action::ShrinkList)
-            }
-            _ => None,
-        }
-    }
-
-    fn handle_project_action(&mut self, action: Action, index: Option<usize>) -> Option<Action> {
-        match action {
-            Action::Delete => {
-                index.map(|index| self.projects.remove(index));
-                Some(Action::ShrinkList)
-            }
-            Action::ChangePriority(priority) => {
-                Self::modifing_action(index, &mut self.projects, |project| Project {
-                    priority: Some(priority),
-                    ..project
-                })
-            }
-            Action::New(title) => Some(Action::SwitchToIndex(self.projects.push(Project {
-                title,
-                ..Project::default()
-            }))),
-            Action::Rename(title) => Self::modifing_action(index, &mut self.projects, |project| {
-                Project { title, ..project }
-            }),
-            Action::MoveToColumn(_) => panic!("Project cannot be moved to a column"),
-            _ => None,
-        }
-    }
-
     fn modifing_action<T: Ord, F: FnOnce(T) -> T>(
         index: Option<usize>,
         list: &mut SortedVec<T>,
         closure: F,
     ) -> Option<Action> {
         index.map(|index| Action::SwitchToIndex(list.map_item_at(index, closure)))
-    }
-
-    pub fn projects(&self) -> &Vec<Project> {
-        self.projects.inner()
-    }
-
-    pub fn tasks(&self, project: usize, column: &str) -> &Vec<Task> {
-        self.projects[project].columns.get(column).inner()
     }
 }
 
@@ -160,23 +96,11 @@ pub enum CurrentList<'a> {
 }
 
 fn path_to_state_file() -> Result<PathBuf> {
-    let mut path = dirs::state_dir().unwrap_or_default();
+    let mut path = dirs::state_dir().or(dirs::data_dir()).unwrap_or_default();
     path.push("kraban");
     fs::create_dir_all(&path)?;
     path.push("tasks.json");
     Ok(path)
-}
-
-#[derive(Derivative, Serialize, Deserialize, Default)]
-#[derivative(PartialEq, Eq, PartialOrd, Ord)]
-pub struct Project {
-    // Priority should be on top so it's sorted properly
-    pub priority: Option<Priority>,
-    pub title: String,
-    #[derivative(PartialEq = "ignore")]
-    #[derivative(PartialOrd = "ignore")]
-    #[derivative(Ord = "ignore")]
-    pub columns: DefaultMap<String, Column>,
 }
 
 type Column = SortedVec<Task>;
@@ -198,11 +122,4 @@ pub enum Priority {
     Low,
     Medium,
     High,
-}
-
-#[derive(Serialize, Deserialize, Default, PartialEq, Eq, PartialOrd, Ord)]
-pub struct Task {
-    // Priority should be on top so it's sorted properly
-    pub priority: Option<Priority>,
-    pub title: String,
 }

@@ -24,9 +24,11 @@ where
 }
 
 pub(super) fn main_block(config: &Config) -> Block<'static> {
-    block_widget(config).title(
-        format!("{} v{}", crate_name!(), crate_version!())
-            .fg(config.app_color)
-            .into_centered_line(),
-    )
+    block_widget(config)
+        .title(
+            format!("{} v{}", crate_name!(), crate_version!())
+                .fg(config.app_color)
+                .into_centered_line(),
+        )
+        .borders(Borders::TOP | Borders::BOTTOM)
 }

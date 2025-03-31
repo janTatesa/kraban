@@ -8,16 +8,16 @@ use ratatui::{
 };
 use tap::Tap;
 
-use crate::app::{config::Config, state::CurrentList, Context};
+use crate::app::{Context, config::Config, state::CurrentList};
 
 use super::{
+    Action, Component, Item, View,
     keyhints::KeyHints,
     list::ListState,
     open_prompt,
     prompt::{ChangePriorityPrompt, DeleteConfirmation, InputAction, InputPrompt},
     task::TasksView,
     widgets::list_widget,
-    Action, Component, Item, View,
 };
 
 #[derive(Debug, Clone, Copy)]
@@ -111,20 +111,31 @@ fn display_project(index: usize, context: Context) -> Line {
     if let Some(priority) = project.priority {
         spans.extend([Span::raw("["), Span::from(priority), Span::raw("] ")]);
     }
-    let mut column_numbers = vec!["[".to_span()];
-    for column in &context.config.all_columns {
-        let len = project.columns.get(&column.name).len();
-        if len == 0 {
-            continue;
-        }
-        column_numbers.push(len.to_string().fg(column.color).bold());
-        column_numbers.push(" ".into());
-        column_numbers.push(column.name.clone().fg(column.color).bold());
-        column_numbers.push(" ".into());
-    }
-    column_numbers.pop();
-    column_numbers.push("] ".to_span());
-    if column_numbers.len() > 1 {
+    let column_numbers: Vec<Span> = ["[".to_span()]
+        .into_iter()
+        .chain(
+            context
+                .config
+                .all_columns
+                .iter()
+                .filter_map(|column| {
+                    let len = project.columns.get(&column.name).len();
+                    if len == 0 {
+                        None
+                    } else {
+                        Some([
+                            len.to_string().fg(column.color).bold(),
+                            column.name.clone().fg(column.color).bold(),
+                        ])
+                    }
+                })
+                .flatten()
+                .flat_map(|span| [" ".to_span(), span])
+                .skip(1),
+        )
+        .chain(["] ".to_span()])
+        .collect();
+    if column_numbers.len() > 2 {
         spans.extend(column_numbers);
     }
     spans.push(project.title.to_span());

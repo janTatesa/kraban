@@ -8,8 +8,8 @@ use ratatui::{
 };
 
 use crate::app::{
-    ui::{keyhints::KeyHints, Action, Component, Item},
     Context,
+    ui::{Action, Component, Item, keyhints::KeyHints},
 };
 
 use super::Prompt;
@@ -33,13 +33,13 @@ impl Prompt for DeleteConfirmation {
 impl Component for DeleteConfirmation {
     fn on_key(&mut self, key_event: KeyEvent, _context: Context) -> Option<Action> {
         match key_event.code {
-            KeyCode::Char('y' | 'Y') => Some(Action::Delete),
+            KeyCode::Char('y' | 'Y') | KeyCode::Enter => Some(Action::Delete),
             _ => None,
         }
     }
 
     fn key_hints(&self, _context: Context) -> KeyHints {
-        vec![("Y/y", "Confirm")]
+        vec![("Y/y/Enter", "Confirm")]
     }
 
     fn render(&self, area: Rect, buf: &mut Buffer, context: Context) {

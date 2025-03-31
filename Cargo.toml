@@ -4,7 +4,7 @@ version = "0.1.0"
 authors = ["Tatesa Uradnik <taduradnik@proton.me>"]
 description = "A rust kanban board tui"
 license = "MIT"
-edition = "2021"
+edition = "2024"
 
 [dependencies]
 crossterm = "0.28.1"

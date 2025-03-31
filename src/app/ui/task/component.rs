@@ -8,6 +8,7 @@ use crate::app::Context;
 
 use super::TasksView;
 use crate::app::ui::{
+    Action, Component, Item,
     keyhints::KeyHints,
     list::{ListState, WrappingUsize},
     open_prompt,
@@ -15,7 +16,6 @@ use crate::app::ui::{
     prompt::{
         ChangePriorityPrompt, DeleteConfirmation, InputAction, InputPrompt, MoveToColumnPrompt,
     },
-    Action, Component, Item,
 };
 
 impl TasksView {
