@@ -3,7 +3,7 @@ use ratatui::{buffer::Buffer, layout::Rect, widgets::ListState as RatatuiListSta
 
 use crate::app::Context;
 
-use super::{keyhints::KeyHints, Action, Component};
+use super::{Action, Component, keyhints::KeyHints};
 
 #[derive(Debug, Default, Clone, Copy)]
 pub struct ListState(Option<WrappingUsize>);

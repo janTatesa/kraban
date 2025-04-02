@@ -3,9 +3,9 @@ use ratatui::{buffer::Buffer, layout::Rect, text::Span, widgets::StatefulWidget}
 use strum::IntoEnumIterator;
 
 use crate::app::{
-    state::Priority,
-    ui::{keyhints::KeyHints, list::WrappingUsize, widgets::list_widget, Action, Component, Item},
     Context,
+    state::Priority,
+    ui::{Action, Component, Item, keyhints::KeyHints, list::WrappingUsize, widgets::list_widget},
 };
 
 use super::Prompt;

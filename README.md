@@ -6,7 +6,7 @@ This project is heavily inspired by <https://github.com/GabAlpha/basilk/>
 - [ ] Task due dates
 - [ ] Stats
 ## Configuration
-Upon first start, kraban will automatically create the config file in `CONFIG_DIRECTORY/kraban.toml`. All non-obvious options are explained in the comments. Colors can either be specified with number name or hex
+Upon first start, kraban will automatically create the config file in `CONFIG_DIRECTORY/kraban/kraban.toml`. All non-obvious options are explained in the comments. Colors can either be specified with number name or hex
 ## Importing from basilk
 To import from basilk, copy the basilks state file into `STATE_DIRECTORY/kraban/tasks.json`. In linux, the state directory is `.local/state`
 ## Rename columns

@@ -1,8 +1,8 @@
 use crate::app::{
+    Context,
     config::Config,
     state::CurrentList,
     ui::{Action, Item, View},
-    Context,
 };
 
 use super::TasksView;

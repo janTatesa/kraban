@@ -15,9 +15,10 @@ pub struct Config {
 
 impl Config {
     pub fn new() -> Result<Self> {
-        let path = dirs::config_dir()
-            .unwrap_or_default()
-            .tap_mut(|p| p.push("kraban.toml"));
+        let path = dirs::config_dir().unwrap_or_default().tap_mut(|p| {
+            p.push("kraban");
+            p.push("kraban.toml")
+        });
         if !fs::exists(&path)? {
             fs::write(&path, include_str!("../../default-config.toml"))?;
         }

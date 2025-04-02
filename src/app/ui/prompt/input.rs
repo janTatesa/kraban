@@ -9,8 +9,8 @@ use tap::Tap;
 use tui_textarea::{CursorMove, TextArea};
 
 use crate::app::{
-    ui::{keyhints::KeyHints, Action, Component, Item},
     Context,
+    ui::{Action, Component, Item, keyhints::KeyHints},
 };
 
 use super::Prompt;

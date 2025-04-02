@@ -4,7 +4,7 @@ mod tab;
 mod view;
 use ratatui::text::{Line, Span};
 
-use crate::app::{state::Task, Context};
+use crate::app::{Context, state::Task};
 
 use super::list::{ListState, WrappingUsize};
 

@@ -9,9 +9,9 @@ use ratatui::{
 };
 
 use crate::app::{
+    Context,
     config::{Column, Config},
     ui::widgets::list_widget,
-    Context,
 };
 
 use super::TasksView;

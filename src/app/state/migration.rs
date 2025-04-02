@@ -3,7 +3,7 @@ use std::collections::HashMap;
 
 use serde_json::Value;
 
-use super::{defaultmap::DefaultMap, sorted_vec::SortedVec, Priority, Project, State, Task};
+use super::{Priority, Project, State, Task, defaultmap::DefaultMap, sorted_vec::SortedVec};
 impl State {
     pub(super) fn from_basilk(mut value: Value) -> Self {
         Self {

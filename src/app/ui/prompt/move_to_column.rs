@@ -8,8 +8,8 @@ use ratatui::{
 };
 
 use crate::app::{
-    ui::{keyhints::KeyHints, list::WrappingUsize, widgets::list_widget, Action, Component, Item},
     Context,
+    ui::{Action, Component, Item, keyhints::KeyHints, list::WrappingUsize, widgets::list_widget},
 };
 
 use super::Prompt;
