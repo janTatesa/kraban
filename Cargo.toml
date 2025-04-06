@@ -5,6 +5,9 @@ authors = ["Tatesa Uradnik <taduradnik@proton.me>"]
 description = "A rust kanban board tui"
 license = "MIT"
 edition = "2024"
+homepage = "https://github.com/TadoTheMiner/kraban"
+repository = "https://github.com/TadoTheMiner/kraban"
+readme = "README.md"
 
 [dependencies]
 crossterm = "0.28.1"
