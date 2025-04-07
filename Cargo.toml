@@ -10,7 +10,7 @@ repository = "https://github.com/TadoTheMiner/kraban"
 readme = "README.md"
 
 [dependencies]
-crossterm = "0.28.1"
+crossterm = "0.29.0"
 ratatui = { version = "0.29.0", features = ["macros", "serde"] }
 color-eyre = "0.6.3"
 serde = { version = "1.0.219", features = ["derive"] }
