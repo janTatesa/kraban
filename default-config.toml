@@ -2,7 +2,6 @@ app_color = "magenta"
 collapse_unfocused_tabs = false
 show_key_hints = true
 
-
 [[column]]
 name = "Backlog"
 color = "red"

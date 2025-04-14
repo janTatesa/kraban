@@ -1,12 +1,13 @@
-use crate::app::ui::Action;
+use crate::app::Action;
 
-use super::{Priority, State};
+use super::{Difficulty, Priority, State};
 use cli_log::debug;
 use serde::{Deserialize, Serialize};
 #[derive(Serialize, Deserialize, Default, PartialEq, Eq, PartialOrd, Ord)]
 pub struct Task {
-    // Priority should be on top so it's sorted properly
+    // Priority and difficulty should be on top so it's sorted properly
     pub priority: Option<Priority>,
+    pub difficulty: Option<Difficulty>,
     pub title: String,
 }
 
@@ -33,6 +34,12 @@ impl State {
                 priority: Some(priority),
                 ..task
             }),
+            Action::ChangeDifficulty(difficulty) => {
+                Self::modifing_action(index, list, |task| Task {
+                    difficulty: Some(difficulty),
+                    ..task
+                })
+            }
             Action::New(title) => Some(Action::SwitchToIndex(list.push(Task {
                 title,
                 ..Task::default()

@@ -1,10 +1,10 @@
-mod change_priority;
 mod delete;
+mod enum_prompt;
 mod input;
 mod move_to_column;
 
-pub use change_priority::ChangePriorityPrompt;
 pub use delete::DeleteConfirmation;
+pub use enum_prompt::EnumPrompt;
 pub use input::{InputAction, InputPrompt};
 pub use move_to_column::MoveToColumnPrompt;
 

@@ -1,5 +1,6 @@
+use crate::app::Action;
+
 use super::{Column, Priority, State, defaultmap::DefaultMap};
-use crate::app::ui::Action;
 use derivative::Derivative;
 use serde::{Deserialize, Serialize};
 

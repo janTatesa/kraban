@@ -7,14 +7,14 @@ mod task;
 mod widgets;
 
 use super::{
-    Context,
+    Action, Context,
     config::Config,
     state::{CurrentList, Priority},
 };
 use cli_log::debug;
 pub use component::Component;
 use project::ProjectsView;
-use prompt::Prompt;
+pub use prompt::Prompt;
 use ratatui::{
     style::{Color, Style},
     text::Span,
@@ -84,24 +84,11 @@ pub enum Item {
     Task,
 }
 
-#[derive(Debug)]
-pub enum Action {
-    ClosePrompt,
-    ShrinkList,
-    Delete,
-    ChangePriority(Priority),
-    New(String),
-    Rename(String),
-    MoveToColumn(String),
-    SwitchToView(Box<dyn View>),
-    OpenPrompt(Box<dyn Prompt>),
-    SwitchToIndex(usize),
-}
-
 impl From<Priority> for Span<'_> {
     fn from(value: Priority) -> Self {
+        let text: &str = value.into();
         Span::styled(
-            value.to_string(),
+            text,
             Style::new().fg(match value {
                 Priority::Low => Color::Green,
                 Priority::Medium => Color::Yellow,

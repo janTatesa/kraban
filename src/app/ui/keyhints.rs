@@ -18,6 +18,7 @@ impl KeyHintsWidget {
                 format!(": {hint}").set_style(self.hint_style),
             )
         });
+        // TODO: This doesn't use iterators, UGLY UGLY UGLY
         let mut lines = vec![Line::default().centered()];
         let mut length = 0;
         for (keybinding, hint) in key_hints {

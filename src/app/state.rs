@@ -6,7 +6,9 @@ mod project;
 mod sorted_vec;
 mod task;
 
-use super::ui::Action;
+use crate::{Dir, get_dir};
+
+use super::Action;
 use cli_log::info;
 use color_eyre::Result;
 pub use project::Project;
@@ -14,6 +16,8 @@ use serde::{Deserialize, Serialize};
 use serde_json::{Value, json};
 use sorted_vec::SortedVec;
 use std::{fs, io::ErrorKind, path::PathBuf};
+use strum_macros::{EnumCount, EnumIter, IntoStaticStr};
+use tap::Tap;
 pub use task::Task;
 
 #[derive(Serialize, Deserialize, Default)]
@@ -22,9 +26,9 @@ pub struct State {
 }
 
 impl State {
-    pub fn new() -> Result<Self> {
+    pub fn new(is_testing: bool) -> Result<Self> {
         let mut value: Value = serde_json::from_str(
-            match fs::read_to_string(path_to_state_file()?) {
+            match fs::read_to_string(path_to_state_file(is_testing)?) {
                 Ok(contents) => contents,
                 Err(error) if error.kind() == ErrorKind::NotFound => return Ok(Self::default()),
                 error => error?,
@@ -60,21 +64,29 @@ impl State {
         }
     }
 
-    pub fn save(&self) -> Result<()> {
+    pub fn save(&self, is_testing: bool) -> Result<()> {
         let json = json!({"version": Self::CURRENT_VERSION, "state": self});
-        fs::write(path_to_state_file()?, serde_json::to_string(&json)?)?;
+        fs::write(
+            path_to_state_file(is_testing)?,
+            serde_json::to_string(&json)?,
+        )?;
         Ok(())
     }
 
-    pub fn handle_action(&mut self, current_list: CurrentList, action: Action) -> Option<Action> {
-        match current_list {
+    pub fn handle_action(
+        &mut self,
+        current_list: CurrentList,
+        action: Action,
+    ) -> Result<Option<Action>> {
+        let action = match current_list {
             CurrentList::Projects(index) => self.handle_project_action(action, index),
             CurrentList::Tasks {
                 project,
                 column,
                 index,
             } => self.handle_task_action(action, project, column, index),
-        }
+        };
+        Ok(action)
     }
 
     fn modifing_action<T: Ord, F: FnOnce(T) -> T>(
@@ -95,12 +107,8 @@ pub enum CurrentList<'a> {
     },
 }
 
-fn path_to_state_file() -> Result<PathBuf> {
-    let mut path = dirs::state_dir().or(dirs::data_dir()).unwrap_or_default();
-    path.push("kraban");
-    fs::create_dir_all(&path)?;
-    path.push("tasks.json");
-    Ok(path)
+fn path_to_state_file(is_testing: bool) -> Result<PathBuf> {
+    Ok(get_dir(Dir::State, is_testing)?.tap_mut(|p| p.push("tasks.json")))
 }
 
 type Column = SortedVec<Task>;
@@ -115,11 +123,34 @@ type Column = SortedVec<Task>;
     Eq,
     PartialOrd,
     Ord,
-    strum_macros::EnumIter,
-    strum_macros::Display,
+    EnumCount,
+    EnumIter,
+    IntoStaticStr,
 )]
 pub enum Priority {
     Low,
     Medium,
     High,
+}
+
+// Idk whether tasks should be ordered easy to hard or hard to easy,
+// but I currently stick to that easy is highest to do the easy stuff asap when I don't have motivation to do hard stuff
+#[derive(
+    Clone,
+    Copy,
+    Debug,
+    Serialize,
+    Deserialize,
+    PartialEq,
+    Eq,
+    PartialOrd,
+    Ord,
+    EnumCount,
+    EnumIter,
+    IntoStaticStr,
+)]
+pub enum Difficulty {
+    Hard,
+    Normal,
+    Easy,
 }

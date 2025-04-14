@@ -50,8 +50,13 @@
           rust-analyzer
           lldb
         ];
+        env = {
+          KRABAN_LOG = "debug";
+          KRABAN_TESTING = "true";
+        };
       };
     });
+
     packages = forEachSupportedSystem ({pkgs}: {
       default = pkgs.rustPlatform.buildRustPackage {
         name = "kraban";

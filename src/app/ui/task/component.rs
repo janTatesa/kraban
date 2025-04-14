@@ -4,7 +4,10 @@ use ratatui::{
     layout::{Constraint, Layout, Rect},
 };
 
-use crate::app::Context;
+use crate::app::{
+    Context,
+    state::{Difficulty, Priority},
+};
 
 use super::TasksView;
 use crate::app::ui::{
@@ -13,9 +16,7 @@ use crate::app::ui::{
     list::{ListState, WrappingUsize},
     open_prompt,
     project::ProjectsView,
-    prompt::{
-        ChangePriorityPrompt, DeleteConfirmation, InputAction, InputPrompt, MoveToColumnPrompt,
-    },
+    prompt::{DeleteConfirmation, EnumPrompt, InputAction, InputPrompt, MoveToColumnPrompt},
 };
 
 impl TasksView {
@@ -32,10 +33,19 @@ impl TasksView {
                 InputAction::New,
                 "Enter new task name".to_string(),
             )),
-            KeyCode::Char('p') => self
-                .focused_task
-                .focused_item()
-                .and_then(|_| open_prompt(ChangePriorityPrompt::new())),
+            // TODO: This is both in task and project and therefore violates DRY, fix that
+            KeyCode::Char('p') => self.focused_task.focused_item().and_then(|_| {
+                open_prompt({
+                    let priority_prompt: EnumPrompt<Priority> = EnumPrompt::new();
+                    priority_prompt
+                })
+            }),
+            KeyCode::Char('d') => self.focused_task.focused_item().and_then(|_| {
+                open_prompt({
+                    let difficulty_prompt: EnumPrompt<Difficulty> = EnumPrompt::new();
+                    difficulty_prompt
+                })
+            }),
             KeyCode::Char('r') => self.focused_task.focused_item().and_then(|index| {
                 open_prompt(InputPrompt::new(
                     context,
@@ -116,6 +126,7 @@ impl Component for TasksView {
                 ("Delete", "Delete"),
                 ("n", "New"),
                 ("p", "Set priority"),
+                ("d", "Set difficulty"),
                 ("r", "Rename"),
             ]);
         }

@@ -8,14 +8,18 @@ use ratatui::{
 };
 use tap::Tap;
 
-use crate::app::{Context, config::Config, state::CurrentList};
+use crate::app::{
+    Context,
+    config::Config,
+    state::{CurrentList, Priority},
+};
 
 use super::{
     Action, Component, Item, View,
     keyhints::KeyHints,
     list::ListState,
     open_prompt,
-    prompt::{ChangePriorityPrompt, DeleteConfirmation, InputAction, InputPrompt},
+    prompt::{DeleteConfirmation, EnumPrompt, InputAction, InputPrompt},
     task::TasksView,
     widgets::list_widget,
 };
@@ -66,10 +70,13 @@ impl Component for ProjectsView {
                 InputAction::New,
                 "Enter new project name".to_string(),
             )),
-            KeyCode::Char('p') => self
-                .0
-                .focused_item()
-                .and_then(|_| open_prompt(ChangePriorityPrompt::new())),
+            // TODO: This is both in task and project and therefore violates DRY, fix that
+            KeyCode::Char('p') => self.0.focused_item().and_then(|_| {
+                open_prompt({
+                    let priority_prompt: EnumPrompt<Priority> = EnumPrompt::new();
+                    priority_prompt
+                })
+            }),
             KeyCode::Char('r') => self.0.focused_item().and_then(|index| {
                 open_prompt(InputPrompt::new(
                     context,
@@ -116,7 +123,7 @@ fn display_project(index: usize, context: Context) -> Line {
         .chain(
             context
                 .config
-                .all_columns
+                .columns
                 .iter()
                 .filter_map(|column| {
                     let len = project.columns.get(&column.name).len();

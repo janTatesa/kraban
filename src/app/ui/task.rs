@@ -2,9 +2,16 @@ mod column;
 mod component;
 mod tab;
 mod view;
-use ratatui::text::{Line, Span};
 
-use crate::app::{Context, state::Task};
+use ratatui::{
+    style::{Color, Style},
+    text::{Line, Span},
+};
+
+use crate::app::{
+    Context,
+    state::{Difficulty, Task},
+};
 
 use super::list::{ListState, WrappingUsize};
 
@@ -48,10 +55,30 @@ impl TasksView {
 impl<'a> From<&'a Task> for Line<'a> {
     fn from(value: &'a Task) -> Self {
         let mut spans = Vec::with_capacity(1);
+        // TODO: extract these to separate functions
         if let Some(priority) = value.priority {
             spans.extend([Span::raw("["), Span::from(priority), Span::raw("] ")]);
         }
+
+        if let Some(difficulty) = value.difficulty {
+            spans.extend([Span::raw("["), Span::from(difficulty), Span::raw("] ")]);
+        }
+
         spans.push(Span::raw(&value.title));
         Line::from(spans)
+    }
+}
+
+impl From<Difficulty> for Span<'static> {
+    fn from(value: Difficulty) -> Self {
+        let str: &str = value.into();
+        Span::styled(
+            str,
+            Style::new().fg(match value {
+                Difficulty::Easy => Color::Green,
+                Difficulty::Normal => Color::Yellow,
+                Difficulty::Hard => Color::Red,
+            }),
+        )
     }
 }

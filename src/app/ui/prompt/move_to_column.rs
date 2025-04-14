@@ -22,7 +22,7 @@ pub struct MoveToColumnPrompt {
 impl MoveToColumnPrompt {
     pub fn new(context: Context, current_column: String) -> Self {
         Self {
-            selected: WrappingUsize::new(context.config.all_columns.len().saturating_sub(2)),
+            selected: WrappingUsize::new(context.config.columns.len().saturating_sub(2)),
             current_column,
         }
     }
@@ -30,7 +30,7 @@ impl MoveToColumnPrompt {
     fn columns<'a>(&self, context: Context<'a>) -> Vec<Span<'a>> {
         context
             .config
-            .all_columns
+            .columns
             .iter()
             .filter_map(|column| {
                 if column.name == self.current_column {
