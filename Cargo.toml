@@ -1,6 +1,6 @@
 [package]
 name = "kraban"
-version = "0.1.0"
+version = "0.2.0"
 authors = ["Tatesa Uradnik <taduradnik@proton.me>"]
 description = "A rust kanban board tui"
 license = "MIT"
