@@ -2,12 +2,16 @@ use crate::app::Action;
 
 use super::{Difficulty, Priority, State};
 use cli_log::debug;
+use derivative::Derivative;
 use serde::{Deserialize, Serialize};
-#[derive(Serialize, Deserialize, Default, PartialEq, Eq, PartialOrd, Ord)]
+#[derive(Serialize, Deserialize, Default, PartialEq, Eq, Derivative)]
+#[derivative(PartialOrd, Ord)]
 pub struct Task {
     // Priority and difficulty should be on top so it's sorted properly
     pub priority: Option<Priority>,
     pub difficulty: Option<Difficulty>,
+    #[derivative(PartialOrd = "ignore")]
+    #[derivative(Ord = "ignore")]
     pub title: String,
 }
 
@@ -28,7 +32,7 @@ impl State {
             Action::Delete => {
                 debug!("{:?}", index);
                 list.remove(index?);
-                Some(Action::ShrinkList)
+                None
             }
             Action::ChangePriority(priority) => Self::modifing_action(index, list, |task| Task {
                 priority: Some(priority),
@@ -50,7 +54,7 @@ impl State {
             Action::MoveToColumn(column) => {
                 let task = list.remove(index?);
                 self.projects[project].columns.get_mut(column).push(task);
-                Some(Action::ShrinkList)
+                None
             }
             _ => None,
         }

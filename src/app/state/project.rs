@@ -9,6 +9,8 @@ use serde::{Deserialize, Serialize};
 pub struct Project {
     // Priority should be on top so it's sorted properly
     pub priority: Option<Priority>,
+    #[derivative(PartialOrd = "ignore")]
+    #[derivative(Ord = "ignore")]
     pub title: String,
     #[derivative(PartialEq = "ignore")]
     #[derivative(PartialOrd = "ignore")]
@@ -29,7 +31,7 @@ impl State {
         match action {
             Action::Delete => {
                 index.map(|index| self.projects.remove(index));
-                Some(Action::ShrinkList)
+                None
             }
             Action::ChangePriority(priority) => {
                 Self::modifing_action(index, &mut self.projects, |project| Project {

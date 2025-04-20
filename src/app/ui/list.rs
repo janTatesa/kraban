@@ -1,3 +1,4 @@
+use cli_log::info;
 use crossterm::event::{KeyCode, KeyEvent};
 use ratatui::{buffer::Buffer, layout::Rect, widgets::ListState as RatatuiListState};
 
@@ -16,24 +17,17 @@ impl ListState {
         self.0.map(|wrapping| wrapping.value)
     }
 
-    pub fn decrement_size(&mut self) {
-        self.0 = self.0.and_then(|wrapping_usize| {
-            let max = wrapping_usize.max.checked_sub(1)?;
-            Some(WrappingUsize {
-                value: wrapping_usize.value.min(max),
-                max,
-            })
+    pub fn update_max_index(&mut self, max_index: Option<usize>) {
+        self.0 = max_index.map(|max_index| WrappingUsize {
+            max: max_index,
+            value: (self
+                .0
+                .map(|wrapping_usize| wrapping_usize.value)
+                .unwrap_or_default()
+                + 1)
+                % (max_index + 1),
         });
-    }
-
-    pub fn increment_size(&mut self) {
-        self.0 = self
-            .0
-            .map(|wrapping_usize| WrappingUsize {
-                max: wrapping_usize.max + 1,
-                ..wrapping_usize
-            })
-            .or(Some(WrappingUsize::new(0)))
+        info!("{:?}", self)
     }
 
     pub fn switch_to_index(&mut self, index: usize) {

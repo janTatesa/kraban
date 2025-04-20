@@ -1,3 +1,5 @@
+use std::fmt::Debug;
+
 use crossterm::event::{KeyCode, KeyEvent};
 use ratatui::{
     buffer::Buffer,
@@ -42,13 +44,13 @@ impl View for ProjectsView {
         CurrentList::Projects(self.0.focused_item())
     }
 
-    fn handle_action(&mut self, action: &Action, _context: Context) {
-        match action {
-            Action::ShrinkList => self.0.decrement_size(),
-            Action::New(_) => self.0.increment_size(),
-            Action::SwitchToIndex(index) => self.0.switch_to_index(*index),
-            _ => {}
-        }
+    fn refresh_on_state_change(&mut self, context: Context) {
+        self.0
+            .update_max_index(context.state.projects().len().checked_sub(1));
+    }
+
+    fn switch_to_index(&mut self, index: usize) {
+        self.0.switch_to_index(index);
     }
 }
 

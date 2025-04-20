@@ -20,14 +20,14 @@ impl State {
 fn process_basilk_project(basilk_project: &mut Value) -> Project {
     let mut columns: DefaultMap<String, SortedVec<Task>> =
         DefaultMap::new(HashMap::with_capacity(3));
-    let tasks = basilk_project["tasks"]
+    basilk_project["tasks"]
         .as_array_mut()
         .unwrap()
         .iter_mut()
-        .map(process_basilk_task);
-    for (column, task) in tasks {
-        columns.get_mut(column.to_string()).push(task);
-    }
+        .map(process_basilk_task)
+        .for_each(|(column, task)| {
+            columns.get_mut(column.to_string()).push(task);
+        });
     Project {
         title: basilk_project["title"].as_str().unwrap().to_string(),
         columns,

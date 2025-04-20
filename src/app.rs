@@ -1,11 +1,11 @@
-mod config;
+pub mod config;
 mod state;
 mod ui;
 
 use clap::ArgMatches;
 use cli_log::{debug, info};
 use color_eyre::Result;
-pub use config::*;
+use config::Config;
 use crossterm::event::{self, Event, KeyCode, KeyEvent, KeyEventKind};
 use ratatui::DefaultTerminal;
 use state::{Difficulty, Priority, State};
@@ -68,21 +68,24 @@ impl App {
     fn handle_crossterm_events(&mut self) -> Result<()> {
         let event = event::read()?;
         debug!("{:?}", event);
-        if let Event::Key(
-            key @ KeyEvent {
-                kind: KeyEventKind::Press,
-                ..
-            },
-        ) = event
-        {
-            self.on_key(key)?
+        match event {
+            Event::Key(
+                key @ KeyEvent {
+                    kind: KeyEventKind::Press,
+                    ..
+                },
+            ) => self.on_key(key)?,
+            Event::FocusGained => {
+                self.state = State::new(self.is_testing)?;
+                self.ui.refresh_on_state_change(context!(self));
+            }
+            _ => {}
         }
         Ok(())
     }
 
     fn on_key(&mut self, key_event: KeyEvent) -> Result<()> {
         if let KeyCode::Char('q') = key_event.code {
-            self.state.save(self.is_testing)?;
             info!("Quiting");
             self.running = false;
         } else {
@@ -90,9 +93,12 @@ impl App {
                 return Ok(());
             };
             let current_list = self.ui.current_list(&self.config);
-            if let Some(action) = self.state.handle_action(current_list, action)? {
-                self.ui.handle_action(action, context!(self));
+            let action = self.state.handle_action(current_list, action)?;
+            self.ui.refresh_on_state_change(context!(self));
+            if let Some(action) = action {
+                self.ui.handle_action(action);
             }
+            self.state.save(self.is_testing)?
         }
         Ok(())
     }
@@ -101,7 +107,6 @@ impl App {
 #[derive(Debug)]
 enum Action {
     ClosePrompt,
-    ShrinkList,
     Delete,
     ChangePriority(Priority),
     ChangeDifficulty(Difficulty),

@@ -2,7 +2,7 @@ use crate::app::{
     Context,
     config::Config,
     state::CurrentList,
-    ui::{Action, Item, View},
+    ui::{Item, View},
 };
 
 use super::TasksView;
@@ -20,12 +20,12 @@ impl View for TasksView {
         }
     }
 
-    fn handle_action(&mut self, action: &Action, _context: Context) {
-        match action {
-            Action::ShrinkList => self.focused_task.decrement_size(),
-            Action::New(_) => self.focused_task.increment_size(),
-            Action::SwitchToIndex(index) => self.focused_task.switch_to_index(*index),
-            _ => {}
-        }
+    fn refresh_on_state_change(&mut self, context: Context) {
+        self.focused_task
+            .update_max_index(self.get_current_column_len(context).checked_sub(1));
+    }
+
+    fn switch_to_index(&mut self, index: usize) {
+        self.focused_task.switch_to_index(index);
     }
 }
