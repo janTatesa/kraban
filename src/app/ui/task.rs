@@ -54,18 +54,16 @@ impl TasksView {
 
 impl<'a> From<&'a Task> for Line<'a> {
     fn from(value: &'a Task) -> Self {
-        let mut spans = Vec::with_capacity(1);
-        // TODO: extract these to separate functions
-        if let Some(priority) = value.priority {
-            spans.extend([Span::raw("["), Span::from(priority), Span::raw("] ")]);
-        }
-
-        if let Some(difficulty) = value.difficulty {
-            spans.extend([Span::raw("["), Span::from(difficulty), Span::raw("] ")]);
-        }
-
-        spans.push(Span::raw(&value.title));
-        Line::from(spans)
+        let spans =
+            value
+                .priority
+                .iter()
+                .flat_map(|priority| [Span::raw("["), Span::from(*priority), Span::raw("] ")])
+                .chain(value.difficulty.iter().flat_map(|difficulty| {
+                    [Span::raw("["), Span::from(*difficulty), Span::raw("] ")]
+                }))
+                .chain([Span::raw(&value.title)]);
+        Line::from_iter(spans)
     }
 }
 

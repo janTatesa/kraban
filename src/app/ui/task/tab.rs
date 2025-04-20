@@ -3,6 +3,7 @@ use ratatui::{
     layout::{Constraint, Layout, Rect},
     style::Style,
 };
+use tap::Tap;
 
 use crate::app::Context;
 
@@ -50,13 +51,15 @@ fn render_separator(area: Rect, buf: &mut Buffer, context: Context) {
         x: area.x + area.width - 1,
         ..area
     };
-    let mut separator_buffer = Buffer::filled(
+    let separator_buffer = Buffer::filled(
         separator_buf_area,
         Cell::new(ratatui::symbols::line::VERTICAL),
-    );
-    separator_buffer.set_style(
-        separator_buf_area,
-        Style::new().fg(context.config.app_color),
-    );
+    )
+    .tap_mut(|buf| {
+        buf.set_style(
+            separator_buf_area,
+            Style::new().fg(context.config.app_color),
+        )
+    });
     buf.merge(&separator_buffer);
 }

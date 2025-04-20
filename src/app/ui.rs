@@ -11,7 +11,7 @@ use super::{
     config::Config,
     state::{CurrentList, Priority},
 };
-use cli_log::debug;
+use cli_log::info;
 pub use component::Component;
 use project::ProjectsView;
 pub use prompt::Prompt;
@@ -46,35 +46,31 @@ impl Ui {
         self.view.current_list(config)
     }
 
-    pub fn handle_action(&mut self, action: Action, context: Context) -> Option<Action> {
-        debug!("Performing {:?}", action);
+    pub fn handle_action(&mut self, action: Action) -> Option<Action> {
+        info!("Performing {:?}", action);
         match action {
-            Action::SwitchToView(view) => {
-                self.view = view;
-                None
-            }
-            Action::OpenPrompt(prompt) => {
-                self.prompt = Some(prompt);
-                None
-            }
-            Action::ClosePrompt => {
-                self.prompt = None;
-                None
-            }
+            Action::SwitchToView(view) => self.view = view,
+            Action::OpenPrompt(prompt) => self.prompt = Some(prompt),
+            Action::ClosePrompt => self.prompt = None,
+            Action::SwitchToIndex(index) => self.view.switch_to_index(index),
             _ => {
                 self.prompt = None;
-                self.view.handle_action(&action, context);
-                Some(action)
+                return Some(action);
             }
         }
+        None
+    }
+
+    pub fn refresh_on_state_change(&mut self, context: Context) {
+        self.view.refresh_on_state_change(context);
     }
 }
 
 pub trait View: Component {
     fn item(&self) -> Item;
     fn current_list<'a>(&self, config: &'a Config) -> CurrentList<'a>;
-    // TODO: implement this automatically
-    fn handle_action(&mut self, action: &Action, context: Context);
+    fn refresh_on_state_change(&mut self, context: Context);
+    fn switch_to_index(&mut self, index: usize);
 }
 
 #[derive(strum_macros::Display, Debug)]

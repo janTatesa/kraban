@@ -49,9 +49,10 @@ impl State {
     }
 
     const BASILK_VERSION: u64 = 0;
-    // IMPORTANT: update this everytime `State` is updated
+    // IMPORTANT: update this everytime `State` is updated incompatibly
     const CURRENT_VERSION: u64 = 1;
 
+    #[allow(clippy::match_overlapping_arm)]
     fn from_version(version: u64, value: Value) -> Result<Self> {
         info!(
             "Json version {version}, latest version {}",

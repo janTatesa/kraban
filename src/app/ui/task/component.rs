@@ -3,6 +3,7 @@ use ratatui::{
     buffer::Buffer,
     layout::{Constraint, Layout, Rect},
 };
+use tap::Tap;
 
 use crate::app::{
     Context,
@@ -114,23 +115,23 @@ impl Component for TasksView {
     }
 
     fn key_hints(&self, context: Context) -> KeyHints {
-        let mut base = vec![
+        vec![
             ("Tab/Backtab", "Switch between tabs"),
             ("Left/Right", "Switch between columns"),
             ("Esc", "Back to projects view"),
             ("Enter", "Move task to column"),
-        ];
-
-        if !self.get_current_column(context.config).immutable {
-            base.extend([
-                ("Delete", "Delete"),
-                ("n", "New"),
-                ("p", "Set priority"),
-                ("d", "Set difficulty"),
-                ("r", "Rename"),
-            ]);
-        }
-        base
+        ]
+        .tap_mut(|base| {
+            if !self.get_current_column(context.config).immutable {
+                base.extend([
+                    ("Delete", "Delete"),
+                    ("n", "New"),
+                    ("p", "Set priority"),
+                    ("d", "Set difficulty"),
+                    ("r", "Rename"),
+                ]);
+            }
+        })
     }
 
     fn render(&self, area: Rect, buf: &mut Buffer, context: Context) {

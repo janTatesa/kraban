@@ -1,15 +1,19 @@
 mod app;
 mod cli;
 
-use std::{fs, panic, path::PathBuf, str::FromStr};
+use std::{fs, io::stdout, path::PathBuf, str::FromStr};
 
-use app::{App, print_default_config, write_default_config};
+use app::{
+    App,
+    config::{print_default_config, write_default_config},
+};
 use cli::cli;
 use cli_log::init_cli_log;
 use color_eyre::{
     Result,
-    eyre::{ContextCompat, eyre},
+    eyre::{Context, ContextCompat},
 };
+use crossterm::{event::EnableFocusChange, execute};
 use tap::Tap;
 
 fn main() -> Result<()> {
@@ -28,33 +32,14 @@ fn main() -> Result<()> {
         .expect("Option has default value")
     {
         return write_default_config(is_testing);
-    }
-    let running_file_path = check_if_running(is_testing)?;
-    fs::write(&running_file_path, "")?;
-    set_panic_hook(running_file_path.clone());
+    };
     init_cli_log!();
     let terminal = ratatui::init();
-    let result = App::run(terminal, cli);
-    fs::remove_file(running_file_path)?;
+    let result = execute!(stdout(), EnableFocusChange)
+        .wrap_err("Failed to enable focus change")
+        .and(App::run(terminal, cli));
     ratatui::restore();
     result
-}
-
-fn set_panic_hook(running_file_path: PathBuf) {
-    let prev = panic::take_hook();
-    panic::set_hook(Box::new(move |info| {
-        fs::remove_file(&running_file_path).unwrap();
-        prev(info)
-    }));
-}
-
-const ALREADY_RUNNING: &str = "Kraban is already running. It currently doesn't support multiple sessions due to conflicts (however it can have a normal and testing session simultaneously). If this is an error remove the file";
-fn check_if_running(is_testing: bool) -> Result<PathBuf> {
-    let running_file_path = get_dir(Dir::State, is_testing)?.tap_mut(|p| p.push("running"));
-    if fs::exists(&running_file_path)? {
-        return Err(eyre!("{ALREADY_RUNNING} {}", running_file_path.display()));
-    }
-    Ok(running_file_path)
 }
 
 fn get_dir(dir: Dir, is_testing: bool) -> Result<PathBuf> {

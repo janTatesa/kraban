@@ -39,7 +39,7 @@ impl Component for Ui {
             (_, Some(prompt)) => prompt.on_key(key_event, context),
             _ => self.view.on_key(key_event, context),
         }
-        .and_then(|action| self.handle_action(action, context))
+        .and_then(|action| self.handle_action(action))
     }
 
     fn key_hints(&self, context: Context) -> KeyHints {
@@ -75,17 +75,10 @@ impl Component for Ui {
             key_hints.render(layout[1], buf)
         }
 
-        let mut view_buffer = Buffer::empty(main_app_area);
-        self.view.render(main_app_area, &mut view_buffer, context);
-        match &self.prompt {
-            Some(prompt) => {
-                view_buffer.set_style(main_app_area, Style::default().dim());
-                buf.merge(&view_buffer);
-                self.render_prompt(main_app_area, buf, &**prompt, context);
-            }
-            _ => {
-                buf.merge(&view_buffer);
-            }
+        self.view.render(main_app_area, buf, context);
+        if let Some(prompt) = &self.prompt {
+            buf.set_style(main_app_area, Style::default().dim());
+            self.render_prompt(main_app_area, buf, &**prompt, context);
         }
     }
 }

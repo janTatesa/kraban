@@ -23,7 +23,7 @@ pub(super) struct Config {
 
 const DEFAULT_CONFIG: &str = include_str!("../../default-config.toml");
 pub fn print_default_config() {
-    println!("{}", DEFAULT_CONFIG);
+    println!("{DEFAULT_CONFIG}");
 }
 
 pub fn write_default_config(is_testing: bool) -> Result<()> {
@@ -83,12 +83,12 @@ impl Config {
 }
 
 #[derive(Default)]
-pub struct Tab {
+pub(super) struct Tab {
     pub columns: Vec<Column>,
 }
 
 #[derive(Clone)]
-pub struct Column {
+pub(super) struct Column {
     pub name: String,
     pub color: Color,
     pub immutable: bool,

@@ -1,7 +1,7 @@
 # kraban
 This project is heavily inspired by <https://github.com/GabAlpha/basilk/>
 ## Development
-It is recommended to use the `flake.nix`. Otherwise you have to manually set `KRABAN_TESTING=true`. This sets the path to the statefile `testing-state.json` and config `testing-config.toml`. The reason is that if you have kraban installed on your system, the development version would conflict
+It is recommended to use the `flake.nix`. Otherwise you have to manually set `KRABAN_TESTING=true`. This sets the path to the statefile `testing-state.json` and config `testing-config.toml`. The reason is that if you have kraban installed on your system, the development version would conflict. Note that the codebase is ugly and begs for a refactor
 ## Instalation
 The project provides a `flake.nix` for NixOS users. It is also available on crates.io (`cargo install kraban`)
 ## Features
