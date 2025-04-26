@@ -35,7 +35,7 @@ impl State {
             }
             Action::ChangePriority(priority) => {
                 Self::modifing_action(index, &mut self.projects, |project| Project {
-                    priority: Some(priority),
+                    priority,
                     ..project
                 })
             }

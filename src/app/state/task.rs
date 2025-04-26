@@ -34,15 +34,11 @@ impl State {
                 list.remove(index?);
                 None
             }
-            Action::ChangePriority(priority) => Self::modifing_action(index, list, |task| Task {
-                priority: Some(priority),
-                ..task
-            }),
+            Action::ChangePriority(priority) => {
+                Self::modifing_action(index, list, |task| Task { priority, ..task })
+            }
             Action::ChangeDifficulty(difficulty) => {
-                Self::modifing_action(index, list, |task| Task {
-                    difficulty: Some(difficulty),
-                    ..task
-                })
+                Self::modifing_action(index, list, |task| Task { difficulty, ..task })
             }
             Action::New(title) => Some(Action::SwitchToIndex(list.push(Task {
                 title,

@@ -3,6 +3,7 @@ use clap::{
     builder::{Styles, styling::AnsiColor::*},
     command,
 };
+
 const STYLE: Styles = Styles::styled()
     .header(Green.on_default().bold())
     .usage(Green.on_default().bold())

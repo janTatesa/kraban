@@ -108,8 +108,8 @@ impl App {
 enum Action {
     ClosePrompt,
     Delete,
-    ChangePriority(Priority),
-    ChangeDifficulty(Difficulty),
+    ChangePriority(Option<Priority>),
+    ChangeDifficulty(Option<Difficulty>),
     New(String),
     Rename(String),
     MoveToColumn(String),
