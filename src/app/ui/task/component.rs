@@ -38,15 +38,17 @@ impl TasksView {
                 "Enter new task name".to_string(),
             )),
             // TODO: This is both in task and project and therefore violates DRY, fix that
-            KeyCode::Char('p') => self.focused_task.focused_item().and_then(|_| {
+            KeyCode::Char('p') => self.focused_task.focused_item().and_then(|index| {
                 open_prompt({
-                    let priority_prompt: EnumPrompt<Priority> = EnumPrompt::new();
+                    let priority_prompt: EnumPrompt<Priority> =
+                        EnumPrompt::new(self.current_task(context, index).priority);
                     priority_prompt
                 })
             }),
-            KeyCode::Char('d') => self.focused_task.focused_item().and_then(|_| {
+            KeyCode::Char('d') => self.focused_task.focused_item().and_then(|index| {
                 open_prompt({
-                    let difficulty_prompt: EnumPrompt<Difficulty> = EnumPrompt::new();
+                    let difficulty_prompt: EnumPrompt<Difficulty> =
+                        EnumPrompt::new(self.current_task(context, index).difficulty);
                     difficulty_prompt
                 })
             }),

@@ -14,6 +14,7 @@ use super::{
 use cli_log::info;
 pub use component::Component;
 use project::ProjectsView;
+use prompt::EnumPrompt;
 pub use prompt::Prompt;
 use ratatui::{
     style::{Color, Style},
@@ -46,13 +47,21 @@ impl Ui {
         self.view.current_list(config)
     }
 
-    pub fn handle_action(&mut self, action: Action) -> Option<Action> {
+    pub fn handle_action(&mut self, action: Action, context: Context) -> Option<Action> {
         info!("Performing {:?}", action);
         match action {
             Action::SwitchToView(view) => self.view = view,
             Action::OpenPrompt(prompt) => self.prompt = Some(prompt),
             Action::ClosePrompt => self.prompt = None,
             Action::SwitchToIndex(index) => self.view.switch_to_index(index),
+            action @ Action::New(_) => {
+                self.prompt = None;
+                if context.config.always_open_priority_prompt {
+                    let enum_prompt: EnumPrompt<Priority> = EnumPrompt::new(None);
+                    self.prompt = Some(Box::new(enum_prompt));
+                };
+                return Some(action);
+            }
             _ => {
                 self.prompt = None;
                 return Some(action);

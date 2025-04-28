@@ -38,7 +38,7 @@ impl Component for Ui {
             (_, Some(prompt)) => prompt.on_key(key_event, context),
             _ => self.view.on_key(key_event, context),
         }
-        .and_then(|action| self.handle_action(action))
+        .and_then(|action| self.handle_action(action, context))
     }
 
     fn key_hints(&self, context: Context) -> KeyHints {

@@ -15,6 +15,7 @@ pub use move_to_column::MoveToColumnPrompt;
 use ratatui::{
     buffer::Buffer,
     layout::{Constraint, Flex, Layout, Rect},
+    text::Line,
     widgets::{Clear, Widget},
 };
 
@@ -41,7 +42,8 @@ impl Ui {
         );
 
         Clear.render(prompt_area, buf);
-        let block = block_widget(context.config).title(prompt.title(self.view.item()));
+        let block = block_widget(context.config)
+            .title(Line::from(prompt.title(self.view.item())).centered());
         let inner_prompt_area = block.inner(prompt_area);
         block.render(prompt_area, buf);
         prompt.render(inner_prompt_area, buf, context);

@@ -1,6 +1,8 @@
 app_color = "magenta"
 collapse_unfocused_tabs = false
 show_key_hints = true
+# Whether to open priority prompt upon project/task creation. False by default as this might be annoying
+always_open_priority_prompt = false
 
 [[column]]
 name = "Backlog"

@@ -97,7 +97,7 @@ impl App {
             let action = self.state.handle_action(current_list, action)?;
             self.ui.refresh_on_state_change(context!(self));
             if let Some(action) = action {
-                self.ui.handle_action(action);
+                self.ui.handle_action(action, context!(self));
             }
             self.state.save(self.is_testing)?
         }

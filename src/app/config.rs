@@ -19,6 +19,7 @@ pub(super) struct Config {
     pub app_color: Color,
     pub collapse_unfocused_tabs: bool,
     pub show_key_hints: bool,
+    pub always_open_priority_prompt: bool,
 }
 
 const DEFAULT_CONFIG: &str = include_str!("../../default-config.toml");
@@ -50,6 +51,7 @@ impl Config {
             app_color,
             collapse_unfocused_tabs,
             show_key_hints,
+            always_open_priority_prompt,
         } = raw;
 
         let columns = columns.into_iter().map(|column| {
@@ -78,6 +80,7 @@ impl Config {
             columns,
             collapse_unfocused_tabs,
             show_key_hints,
+            always_open_priority_prompt,
         })
     }
 }
@@ -110,4 +113,5 @@ struct ConfigRaw {
     app_color: Color,
     collapse_unfocused_tabs: bool,
     show_key_hints: bool,
+    always_open_priority_prompt: bool,
 }

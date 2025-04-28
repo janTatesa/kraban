@@ -73,9 +73,10 @@ impl Component for ProjectsView {
                 "Enter new project name".to_string(),
             )),
             // TODO: This is both in task and project and therefore violates DRY, fix that
-            KeyCode::Char('p') => self.0.focused_item().and_then(|_| {
+            KeyCode::Char('p') => self.0.focused_item().and_then(|index| {
                 open_prompt({
-                    let priority_prompt: EnumPrompt<Priority> = EnumPrompt::new();
+                    let priority_prompt: EnumPrompt<Priority> =
+                        EnumPrompt::new(context.state.projects()[index].priority);
                     priority_prompt
                 })
             }),
