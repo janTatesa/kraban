@@ -8,6 +8,7 @@ use tap::Tap;
 use crate::app::{
     Context,
     state::{Difficulty, Priority},
+    ui::prompt::DueDatePrompt,
 };
 
 use super::TasksView;
@@ -23,12 +24,14 @@ use crate::app::ui::{
 impl TasksView {
     fn on_key_mutable(&mut self, key_event: KeyEvent, context: Context) -> Option<Action> {
         match key_event.code {
-            KeyCode::Delete => self.focused_task.focused_item().and_then(|index| {
-                open_prompt(DeleteConfirmation {
-                    name: self.task_name(context, index),
-                    item: Item::Task,
+            KeyCode::Delete | KeyCode::Backspace => {
+                self.focused_task.focused_item().and_then(|index| {
+                    open_prompt(DeleteConfirmation {
+                        name: self.current_task(context, index).title,
+                        item: Item::Task,
+                    })
                 })
-            }),
+            }
             KeyCode::Char('n') => open_prompt(InputPrompt::new(
                 context,
                 InputAction::New,
@@ -51,7 +54,12 @@ impl TasksView {
                 open_prompt(InputPrompt::new(
                     context,
                     InputAction::Rename,
-                    self.task_name(context, index),
+                    self.current_task(context, index).title,
+                ))
+            }),
+            KeyCode::Char('a') => self.focused_task.focused_item().and_then(|index| {
+                open_prompt(DueDatePrompt::new(
+                    self.current_task(context, index).due_date,
                 ))
             }),
             _ => self.focused_task.on_key(key_event, context),
@@ -124,11 +132,12 @@ impl Component for TasksView {
         .tap_mut(|base| {
             if !self.get_current_column(context.config).immutable {
                 base.extend([
-                    ("Delete", "Delete"),
+                    ("Delete/Backspace", "Delete"),
                     ("n", "New"),
                     ("p", "Set priority"),
                     ("d", "Set difficulty"),
                     ("r", "Rename"),
+                    ("a", "Add due date"),
                 ]);
             }
         })

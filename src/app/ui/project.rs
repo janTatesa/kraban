@@ -61,7 +61,7 @@ fn project_title(context: Context, index: usize) -> String {
 impl Component for ProjectsView {
     fn on_key(&mut self, key_event: KeyEvent, context: Context) -> Option<Action> {
         match key_event.code {
-            KeyCode::Delete => self.0.focused_item().and_then(|index| {
+            KeyCode::Delete | KeyCode::Backspace => self.0.focused_item().and_then(|index| {
                 open_prompt(DeleteConfirmation {
                     name: project_title(context, index),
                     item: Item::Project,
@@ -97,7 +97,7 @@ impl Component for ProjectsView {
     fn key_hints(&self, context: Context) -> KeyHints {
         self.0.key_hints(context).tap_mut(|v| {
             v.extend([
-                ("Delete", "Delete"),
+                ("Delete/Backspace", "Delete"),
                 ("n", "New"),
                 ("p", "Set priority"),
                 ("r", "Rename"),

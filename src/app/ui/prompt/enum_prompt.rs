@@ -6,12 +6,12 @@ use ratatui::{buffer::Buffer, layout::Rect, text::Span, widgets::StatefulWidget}
 use strum::{EnumCount, IntoEnumIterator};
 
 use crate::app::{
-    self, Context,
+    Context,
     state::{Difficulty, Priority},
     ui::{Action, Component, Item, keyhints::KeyHints, list::WrappingUsize, widgets::list_widget},
 };
 
-use super::Prompt;
+use super::{DEFAULT_WIDTH, Prompt};
 
 pub trait EnumPromptMember: EnumCount + IntoEnumIterator + Into<Span<'static>>
 where
@@ -78,6 +78,10 @@ where
 
     fn title(&self, item: Item) -> String {
         format!("Change {item} {}", T::type_name())
+    }
+
+    fn width(&self) -> u16 {
+        DEFAULT_WIDTH / 2
     }
 }
 

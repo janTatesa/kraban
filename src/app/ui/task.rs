@@ -3,10 +3,12 @@ mod component;
 mod tab;
 mod view;
 
+use cli_log::error;
 use ratatui::{
-    style::{Color, Style},
-    text::{Line, Span},
+    style::{Color, Style, Stylize},
+    text::{Line, Span, ToSpan},
 };
+use time::{Date, OffsetDateTime};
 
 use crate::app::{
     Context,
@@ -43,11 +45,10 @@ impl TasksView {
         }
     }
 
-    fn task_name(&self, context: Context, index: usize) -> String {
+    fn current_task(&self, context: Context, index: usize) -> Task {
         context
             .state
             .tasks(self.project, &self.get_current_column(context.config).name)[index]
-            .title
             .clone()
     }
 }
@@ -62,9 +63,32 @@ impl<'a> From<&'a Task> for Line<'a> {
                 .chain(value.difficulty.iter().flat_map(|difficulty| {
                     [Span::raw("["), Span::from(*difficulty), Span::raw("] ")]
                 }))
+                .chain(
+                    value
+                        .due_date
+                        .iter()
+                        .flat_map(|date| [Span::raw("["), date_to_span(date), Span::raw("] ")]),
+                )
                 .chain([Span::raw(&value.title)]);
         Line::from_iter(spans)
     }
+}
+
+fn date_to_span(date: &Date) -> Span<'_> {
+    let duration = *date
+        - OffsetDateTime::now_local()
+            .inspect(|e| error!("Failed to get local timezone using utc {e}"))
+            .unwrap_or(OffsetDateTime::now_utc())
+            .date();
+    let color = match duration.whole_days() {
+        ..0 => Color::Red,
+        0 => Color::Yellow,
+        1..7 => Color::Green,
+        7..30 => Color::Blue,
+        _ => Color::Magenta,
+    };
+
+    date.to_span().fg(color)
 }
 
 impl From<Difficulty> for Span<'static> {

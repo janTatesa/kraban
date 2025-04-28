@@ -52,7 +52,7 @@ fn process_basilk_task(basilk_task: &mut Value) -> (&str, Task) {
                 3 => Some(Priority::High),
                 _ => panic!(),
             },
-            difficulty: None,
+            ..Task::default()
         },
     )
 }

@@ -12,7 +12,7 @@ use crate::app::{
     ui::{Action, Component, Item, keyhints::KeyHints},
 };
 
-use super::Prompt;
+use super::{DEFAULT_WIDTH, Prompt};
 
 #[derive(Debug)]
 pub struct DeleteConfirmation {
@@ -27,6 +27,10 @@ impl Prompt for DeleteConfirmation {
 
     fn title(&self, item: Item) -> String {
         format!("Delete {item}")
+    }
+
+    fn width(&self) -> u16 {
+        DEFAULT_WIDTH
     }
 }
 

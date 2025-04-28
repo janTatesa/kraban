@@ -9,6 +9,7 @@ use config::Config;
 use crossterm::event::{self, Event, KeyCode, KeyEvent, KeyEventKind};
 use ratatui::DefaultTerminal;
 use state::{Difficulty, Priority, State};
+use time::Date;
 use ui::{Component, Prompt, Ui, View};
 
 pub struct App {
@@ -116,4 +117,5 @@ enum Action {
     SwitchToView(Box<dyn View>),
     OpenPrompt(Box<dyn Prompt>),
     SwitchToIndex(usize),
+    SetTaskDueDate(Date),
 }

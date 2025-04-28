@@ -13,7 +13,7 @@ use crate::app::{
     ui::{Action, Component, Item, keyhints::KeyHints},
 };
 
-use super::Prompt;
+use super::{DEFAULT_WIDTH, Prompt};
 
 #[derive(Debug)]
 pub struct InputPrompt {
@@ -57,6 +57,10 @@ impl Prompt for InputPrompt {
 
     fn title(&self, item: Item) -> String {
         format!("{} {item}", self.input_action)
+    }
+
+    fn width(&self) -> u16 {
+        DEFAULT_WIDTH
     }
 }
 

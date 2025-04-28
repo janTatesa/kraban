@@ -3,10 +3,10 @@ use crossterm::event::{KeyCode, KeyEvent, KeyModifiers};
 use keyhints::KeyHints;
 use ratatui::{
     buffer::Buffer,
-    layout::{Constraint, Flex, Layout, Rect},
+    layout::{Constraint, Layout, Rect},
     style::{Style, Stylize},
     text::Text,
-    widgets::{Clear, Widget},
+    widgets::Widget,
 };
 use std::fmt::Debug;
 use tap::Tap;
@@ -15,8 +15,7 @@ use widgets::main_block;
 use super::{
     Action, Ui,
     keyhints::{self, KeyHintsWidget},
-    prompt::Prompt,
-    widgets::{self, block_widget},
+    widgets,
 };
 
 pub trait Component: Debug {
@@ -83,14 +82,6 @@ impl Component for Ui {
     }
 }
 
-fn center_area(area: Rect, horizontal: Constraint, vertical: Constraint) -> Rect {
-    let [area] = Layout::horizontal([horizontal])
-        .flex(Flex::Center)
-        .areas(area);
-    let [area] = Layout::vertical([vertical]).flex(Flex::Center).areas(area);
-    area
-}
-
 impl Ui {
     fn key_hints_widget(&self, context: Context, width: u16) -> Text<'static> {
         let key_hints = self
@@ -102,18 +93,5 @@ impl Ui {
             hint_style: Style::new().reset().italic(),
         }
         .into_text(width)
-    }
-    fn render_prompt(&self, area: Rect, buf: &mut Buffer, prompt: &dyn Prompt, context: Context) {
-        let prompt_area = center_area(
-            area,
-            Constraint::Percentage(60),
-            Constraint::Length(prompt.height() + 2),
-        );
-
-        Clear.render(prompt_area, buf);
-        let block = block_widget(context.config).title(prompt.title(self.view.item()));
-        let inner_prompt_area = block.inner(prompt_area);
-        block.render(prompt_area, buf);
-        prompt.render(inner_prompt_area, buf, context);
     }
 }
