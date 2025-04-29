@@ -1,4 +1,5 @@
 pub mod config;
+mod date;
 mod state;
 mod ui;
 
@@ -94,7 +95,9 @@ impl App {
                 return Ok(());
             };
             let current_list = self.ui.current_list(&self.config);
-            let action = self.state.handle_action(current_list, action)?;
+            let action = self
+                .state
+                .handle_action(current_list, action, &self.config)?;
             self.ui.refresh_on_state_change(context!(self));
             if let Some(action) = action {
                 self.ui.handle_action(action, context!(self));

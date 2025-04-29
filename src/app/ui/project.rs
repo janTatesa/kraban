@@ -52,6 +52,10 @@ impl View for ProjectsView {
     fn switch_to_index(&mut self, index: usize) {
         self.0.switch_to_index(index);
     }
+
+    fn title(&self, _context: Context) -> String {
+        "Projects".to_string()
+    }
 }
 
 fn project_title(context: Context, index: usize) -> String {

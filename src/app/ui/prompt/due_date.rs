@@ -1,4 +1,6 @@
-use chrono::{Datelike, Days, Local, Months};
+use std::{collections::HashMap, iter};
+
+use chrono::{Days, Local, Months};
 use crossterm::event::{KeyCode, KeyEvent};
 use ratatui::{
     buffer::Buffer,
@@ -9,10 +11,10 @@ use ratatui::{
         calendar::{CalendarEventStore, Monthly},
     },
 };
-use tap::Tap;
 
 use crate::app::{
     Action, Context,
+    date::{ChronoDate, chrono_date_to_time_date, time_date_to_chrono_date},
     ui::{Component, Item, keyhints::KeyHints},
 };
 
@@ -79,44 +81,21 @@ impl Component for DueDatePrompt {
     }
 
     fn render(&self, area: Rect, buf: &mut Buffer, context: Context) {
-        let date = chrono_date_to_time_date(self.current_date);
+        let selected_date = chrono_date_to_time_date(self.current_date);
         let selected_style = Style::new().fg(context.config.app_color).reversed();
+        let today = chrono_date_to_time_date(Local::now());
         let today_style = Style::new().fg(Color::Green).reversed();
-        let old_style = Style::new().fg(Color::Yellow).reversed();
-        let event_store = CalendarEventStore::default().tap_mut(|c| {
-            c.add(chrono_date_to_time_date(Local::now()), today_style);
-            if let Some(date) = self.old_date {
-                c.add(date, old_style)
-            }
-            c.add(date, selected_style);
-        });
+        let old_date_style = Style::new().fg(Color::Yellow).reversed();
+        let event_store = CalendarEventStore(HashMap::from_iter(
+            iter::once((today, today_style))
+                .chain(self.old_date.map(|old_date| (old_date, old_date_style)))
+                .chain(iter::once((selected_date, selected_style))),
+        ));
 
-        Monthly::new(date, event_store)
+        Monthly::new(selected_date, event_store)
             .show_surrounding(Style::new().fg(Color::DarkGray))
             .show_weekdays_header(Style::new().fg(Color::Green).italic())
             .show_month_header(Style::new().fg(Color::Yellow).bold())
             .render(area, buf);
     }
-}
-
-type ChronoDate = chrono::DateTime<Local>;
-// hate that there's two crates which do not fully implement my use case but whathever
-fn chrono_date_to_time_date(chrono_date: ChronoDate) -> time::Date {
-    let year = chrono_date.year();
-    let month = time::Month::December.nth_next(chrono_date.month() as u8);
-    let day = chrono_date.day();
-    time::Date::from_calendar_date(year, month, day as u8).unwrap()
-}
-
-fn time_date_to_chrono_date(time_date: time::Date) -> ChronoDate {
-    let year = time_date.year();
-    let month = time_date.month() as u32;
-    let day = time_date.day() as u32;
-    ChronoDate::default()
-        .with_year(year)
-        .unwrap()
-        .with_month(month)
-        .unwrap()
-        .with_day(day)
-        .unwrap()
 }

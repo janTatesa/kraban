@@ -42,7 +42,7 @@ impl TasksView {
         let block_name = format!(
             "{}{}{}",
             column.name,
-            optional_text(column_len, column_len != 0 && area.height == 1,),
+            optional_text(column_len, area.height <= column_len as u16,),
             optional_text("immutable", column.immutable)
         );
         Line::from(block_name).centered().render(area, buf);

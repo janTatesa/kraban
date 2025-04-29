@@ -28,4 +28,8 @@ impl View for TasksView {
     fn switch_to_index(&mut self, index: usize) {
         self.focused_task.switch_to_index(index);
     }
+
+    fn title(&self, context: Context) -> String {
+        format!("Tasks in {}", context.state.projects()[self.project].title)
+    }
 }

@@ -1,8 +1,9 @@
 use std::cmp::Ordering;
 
-use crate::app::{Action, Date};
+use crate::app::{Action, Config, Date, date::chrono_date_to_time_date};
 
 use super::{Difficulty, Priority, State};
+use chrono::{Days, Local};
 use cli_log::debug;
 use derivative::Derivative;
 use serde::{Deserialize, Serialize};
@@ -13,6 +14,24 @@ pub struct Task {
     pub due_date: Option<Date>,
     pub difficulty: Option<Difficulty>,
     pub title: String,
+    #[serde(default)]
+    pub due_date_manually_set: bool,
+}
+
+impl Task {
+    fn due_date_by_priority(&self, priority: Option<Priority>, config: &Config) -> Option<Date> {
+        if !self.due_date_manually_set && config.default_due_dates.enable {
+            Some(chrono_date_to_time_date(Local::now().checked_add_days(
+                Days::new(match priority? {
+                    Priority::Low => config.default_due_dates.low,
+                    Priority::Medium => config.default_due_dates.medium,
+                    Priority::High => config.default_due_dates.high,
+                } as u64),
+            )?))
+        } else {
+            self.due_date
+        }
+    }
 }
 
 impl Ord for Task {
@@ -48,6 +67,7 @@ impl State {
         project: usize,
         column: &str,
         index: Option<usize>,
+        config: &Config,
     ) -> Option<Action> {
         let list = self.projects[project].columns.get_mut(column.to_string());
         match action {
@@ -56,9 +76,11 @@ impl State {
                 list.remove(index?);
                 None
             }
-            Action::ChangePriority(priority) => {
-                Self::modifing_action(index, list, |task| Task { priority, ..task })
-            }
+            Action::ChangePriority(priority) => Self::modifing_action(index, list, |task| Task {
+                priority,
+                due_date: task.due_date_by_priority(priority, config),
+                ..task
+            }),
             Action::ChangeDifficulty(difficulty) => {
                 Self::modifing_action(index, list, |task| Task { difficulty, ..task })
             }
@@ -76,6 +98,7 @@ impl State {
             }
             Action::SetTaskDueDate(due_date) => Self::modifing_action(index, list, |task| Task {
                 due_date: Some(due_date),
+                due_date_manually_set: true,
                 ..task
             }),
             _ => None,

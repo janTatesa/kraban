@@ -77,6 +77,7 @@ impl Ui {
 
 pub trait View: Component {
     fn item(&self) -> Item;
+    fn title(&self, context: Context) -> String;
     fn current_list<'a>(&self, config: &'a Config) -> CurrentList<'a>;
     fn refresh_on_state_change(&mut self, context: Context);
     fn switch_to_index(&mut self, index: usize);

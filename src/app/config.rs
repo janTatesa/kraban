@@ -20,6 +20,7 @@ pub(super) struct Config {
     pub collapse_unfocused_tabs: bool,
     pub show_key_hints: bool,
     pub always_open_priority_prompt: bool,
+    pub default_due_dates: DefaultDueDates,
 }
 
 const DEFAULT_CONFIG: &str = include_str!("../../default-config.toml");
@@ -52,6 +53,7 @@ impl Config {
             collapse_unfocused_tabs,
             show_key_hints,
             always_open_priority_prompt,
+            default_due_dates,
         } = raw;
 
         let columns = columns.into_iter().map(|column| {
@@ -81,6 +83,7 @@ impl Config {
             collapse_unfocused_tabs,
             show_key_hints,
             always_open_priority_prompt,
+            default_due_dates,
         })
     }
 }
@@ -114,4 +117,13 @@ struct ConfigRaw {
     collapse_unfocused_tabs: bool,
     show_key_hints: bool,
     always_open_priority_prompt: bool,
+    default_due_dates: DefaultDueDates,
+}
+
+#[derive(Deserialize)]
+pub struct DefaultDueDates {
+    pub enable: bool,
+    pub high: u16,
+    pub medium: u16,
+    pub low: u16,
 }

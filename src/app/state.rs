@@ -8,7 +8,7 @@ mod task;
 
 use crate::{Dir, get_dir};
 
-use super::Action;
+use super::{Action, Config};
 use cli_log::info;
 use color_eyre::Result;
 pub use project::Project;
@@ -78,6 +78,7 @@ impl State {
         &mut self,
         current_list: CurrentList,
         action: Action,
+        config: &Config,
     ) -> Result<Option<Action>> {
         let action = match current_list {
             CurrentList::Projects(index) => self.handle_project_action(action, index),
@@ -85,7 +86,7 @@ impl State {
                 project,
                 column,
                 index,
-            } => self.handle_task_action(action, project, column, index),
+            } => self.handle_task_action(action, project, column, index, config),
         };
         Ok(action)
     }

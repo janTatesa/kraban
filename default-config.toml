@@ -4,6 +4,15 @@ show_key_hints = true
 # Whether to open priority prompt upon project/task creation. False by default as this might be annoying
 always_open_priority_prompt = false
 
+# When set to true, the due date will be automatically set based on priority (the numbers indicate how many days after today the task is due)
+# This will not override the due date you set manually
+[default_due_dates]
+enable = false
+high = 2
+medium = 7
+low = 30
+
+# Column config. I personally use columns Idea Doing Waiting Done Won't do but this is the standard
 [[column]]
 name = "Backlog"
 color = "red"

@@ -66,7 +66,7 @@ impl Component for Ui {
         ])
         .split(terminal_area);
 
-        let block = main_block(context.config);
+        let block = main_block(context.config).title(self.view.title(context));
 
         let main_app_area = block.inner(layout[0]);
         block.render(layout[0], buf);
