@@ -22,7 +22,7 @@ pub struct Config {
     pub default_due_dates: DefaultDueDates,
 }
 
-const DEFAULT_CONFIG: &str = include_str!("../../default-config.toml");
+const DEFAULT_CONFIG: &str = include_str!("./default-config.toml");
 pub fn print_default_config() {
     println!("{DEFAULT_CONFIG}");
 }
