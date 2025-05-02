@@ -1,6 +1,5 @@
 use super::{State, Task, sorted_vec::SortedVec};
 use kraban_config::Config;
-use kraban_lib::compare_due_dates;
 use ratatui::style::Color;
 use serde::{Deserialize, Serialize};
 use std::cmp::Ordering;

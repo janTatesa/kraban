@@ -12,7 +12,7 @@ homepage.workspace = true
 
 [dependencies]
 figment = { version = "0.10.19", features = ["toml"] }
-kraban-lib.path = "../kraban-lib"
+kraban-lib.workspace = true
 color-eyre.workspace = true
 ratatui.workspace = true
 serde.workspace = true
