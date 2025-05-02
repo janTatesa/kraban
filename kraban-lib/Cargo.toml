@@ -1,0 +1,21 @@
+[package]
+name = "kraban-lib"
+description = "Items shared between components of the kraban app"
+version.workspace = true
+authors.workspace = true
+edition.workspace = true
+license.workspace = true
+categories.workspace = true
+keywords.workspace = true
+repository.workspace = true
+homepage.workspace = true
+
+[dependencies]
+dirs = "6.0.0"
+time.workspace = true
+chrono.workspace = true
+color-eyre.workspace = true
+strum_macros.workspace = true
+strum.workspace = true
+tap.workspace = true
+

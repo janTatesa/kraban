@@ -32,5 +32,7 @@ tab = 0
 name = "Done"
 color = "blue"
 tab = 1
-# Whether to prevent tasks being added deleted or modified in the column (they can still be moved to a different column)
-immutable = true
+# This option prevents tasks being added deleted or modified in the column (they can still be moved to a different column)
+# It will also exclude the tasks in due tasks list
+# Multiple columns can have this option
+done_column = true

@@ -1,0 +1,19 @@
+[package]
+name = "kraban-config"
+description = "Configuration for kraban"
+version.workspace = true
+authors.workspace = true
+edition.workspace = true
+license.workspace = true
+categories.workspace = true
+keywords.workspace = true
+repository.workspace = true
+homepage.workspace = true
+
+[dependencies]
+figment = { version = "0.10.19", features = ["toml"] }
+kraban-lib.path = "../kraban-lib"
+color-eyre.workspace = true
+ratatui.workspace = true
+serde.workspace = true
+tap.workspace = true
