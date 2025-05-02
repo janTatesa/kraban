@@ -7,7 +7,7 @@ use ratatui::{
     buffer::Buffer,
     layout::{Constraint, Layout, Rect},
     style::{Style, Stylize},
-    text::{Line, Text, ToLine},
+    text::{Line, Text},
     widgets::Widget,
 };
 use tap::Tap;

@@ -13,9 +13,9 @@ homepage.workspace = true
 [dependencies]
 tui-textarea = "0.7.0"
 enum_dispatch = "0.3.13"
-kraban-state.path = "../kraban-state"
-kraban-config.path = "../kraban-config"
-kraban-lib.path = "../kraban-lib"
+kraban-state.workspace = true
+kraban-config.workspace = true
+kraban-lib.workspace = true
 cli-log.workspace = true
 ratatui.workspace = true
 tap.workspace = true
