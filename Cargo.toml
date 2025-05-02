@@ -1,6 +1,10 @@
-[package]
-name = "kraban"
-version = "0.3.0"
+[workspace]
+resolver = "2"
+members = ["kraban", "kraban-ui", "kraban-state", "kraban-config", "kraban-lib"]
+default-members = ["kraban"]
+
+[workspace.package]
+version = "0.4.0"
 authors = ["Tatesa Uradnik <taduradnik@proton.me>"]
 description = "A rust kanban board tui"
 license = "MIT"
@@ -8,19 +12,22 @@ edition = "2024"
 homepage = "https://github.com/TadoTheMiner/kraban"
 repository = "https://github.com/TadoTheMiner/kraban"
 readme = "README.md"
+categories = ["command-line-utilities"]
+keywords = ["tui", "kanban", "tasks", "ratatui", "terminal"]
 
-[dependencies]
+[workspace.dependencies]
 crossterm = "0.28.1"
-ratatui = { version = "0.29.0", features = ["macros", "serde", "unstable-rendered-line-info", "widget-calendar"] }
+ratatui = { version = "0.29.0", features = [
+  "macros",
+  "serde",
+  "unstable-rendered-line-info",
+  "widget-calendar",
+] }
 color-eyre = "0.6.3"
 serde = { version = "1.0.219", features = ["derive"] }
-serde_json = "1.0.140"
-dirs = "6.0.0"
 tap = "1.0.1"
-clap = { version = "4.5.34", features = ["cargo", "env"] }
 cli-log = "2.1.0"
 strum = "0.27.1"
 strum_macros = "0.27.1"
-tui-textarea = "0.7.0"
-derivative = "2.2.0"
-figment = { version = "0.10.19", features = ["toml"] }
+time = { version = "0.3.41", features = ["serde"] }
+chrono = { version = "0.4.40", features = ["now", "serde"] }

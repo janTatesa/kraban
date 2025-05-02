@@ -1,7 +1,18 @@
 app_color = "magenta"
 collapse_unfocused_tabs = false
 show_key_hints = true
+# Whether to open priority prompt upon project/task creation. False by default as this might be annoying
+always_open_priority_prompt = false
 
+# When set to true, the due date will be automatically set based on priority (the numbers indicate how many days after today the task is due)
+# This will not override the due date you set manually
+[default_due_dates]
+enable = false
+high = 2
+medium = 7
+low = 30
+
+# Column config. I personally use columns Idea Doing Waiting Done Won't do but this is the standard
 [[column]]
 name = "Backlog"
 color = "red"
@@ -21,5 +32,7 @@ tab = 0
 name = "Done"
 color = "blue"
 tab = 1
-# Whether to prevent tasks being added deleted or modified in the column (they can still be moved to a different column)
-immutable = true
+# This option prevents tasks being added deleted or modified in the column (they can still be moved to a different column)
+# It will also exclude the tasks in due tasks list
+# Multiple columns can have this option
+done_column = true
