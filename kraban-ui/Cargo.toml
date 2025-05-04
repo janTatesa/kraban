@@ -11,8 +11,8 @@ repository.workspace = true
 homepage.workspace = true
 
 [dependencies]
-tui-textarea = "0.7.0"
-enum_dispatch = "0.3.13"
+tui-textarea.workspace = true
+enum_dispatch.workspace = true
 kraban-state.workspace = true
 kraban-config.workspace = true
 kraban-lib.workspace = true

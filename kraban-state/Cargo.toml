@@ -10,8 +10,8 @@ repository.workspace = true
 homepage.workspace = true
 
 [dependencies]
-serde_json = "1.0.140"
-derivative = "2.2.0"
+serde_json.workspace = true 
+derivative.workspace = true 
 kraban-lib.workspace = true
 kraban-config.workspace = true
 cli-log.workspace = true
