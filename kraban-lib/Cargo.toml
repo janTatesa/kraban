@@ -9,6 +9,7 @@ categories.workspace = true
 keywords.workspace = true
 repository.workspace = true
 homepage.workspace = true
+readme.workspace = true
 
 [dependencies]
 dirs = "6.0.0"

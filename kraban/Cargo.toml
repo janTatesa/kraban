@@ -9,6 +9,7 @@ categories.workspace = true
 keywords.workspace = true
 repository.workspace = true
 homepage.workspace = true
+readme.workspace = true
 
 [dependencies]
 clap = { version = "4.5.34", features = ["cargo", "env"] }

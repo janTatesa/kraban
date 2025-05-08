@@ -8,6 +8,7 @@ license.workspace = true
 categories.workspace = true
 repository.workspace = true
 homepage.workspace = true
+readme.workspace = true
 
 [dependencies]
 serde_with = "3.12.0"
