@@ -3,7 +3,9 @@ use crate::{Action, SwitchToIndex};
 use super::{Column, Priority, State, defaultmap::DefaultMap};
 use derivative::Derivative;
 use serde::{Deserialize, Serialize};
+use serde_with::skip_serializing_none;
 
+#[skip_serializing_none]
 #[derive(Derivative, Serialize, Deserialize, Default)]
 #[derivative(PartialEq, Eq, PartialOrd, Ord)]
 pub struct Project {

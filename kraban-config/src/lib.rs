@@ -96,6 +96,7 @@ pub struct Column {
 }
 
 #[derive(Deserialize, Clone)]
+#[serde(deny_unknown_fields)]
 struct ColumnRaw {
     name: String,
     color: Color,
@@ -105,6 +106,7 @@ struct ColumnRaw {
 }
 
 #[derive(Deserialize)]
+#[serde(deny_unknown_fields)]
 struct ConfigRaw {
     #[serde(alias = "column")]
     columns: Vec<ColumnRaw>,
@@ -116,6 +118,7 @@ struct ConfigRaw {
 }
 
 #[derive(Deserialize)]
+#[serde(deny_unknown_fields)]
 pub struct DefaultDueDates {
     pub enable: bool,
     pub high: u16,

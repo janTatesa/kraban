@@ -31,6 +31,7 @@ pub use task::Task;
 #[derive(Serialize, Deserialize, Default)]
 pub struct State {
     projects: SortedVec<Project>,
+    #[serde(skip)]
     due_tasks: Option<SortedVec<DueTask>>,
 }
 
