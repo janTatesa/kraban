@@ -11,7 +11,7 @@ license = "MIT"
 edition = "2024"
 homepage = "https://github.com/TadoTheMiner/kraban"
 repository = "https://github.com/TadoTheMiner/kraban"
-readme = "../README.md"
+readme = "./README.md"
 categories = ["command-line-utilities"]
 keywords = ["tui", "kanban", "tasks", "ratatui", "terminal"]
 
