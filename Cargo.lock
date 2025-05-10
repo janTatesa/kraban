@@ -616,7 +616,7 @@ dependencies = [
 
 [[package]]
 name = "kraban"
-version = "0.4.1"
+version = "0.4.2"
 dependencies = [
  "clap",
  "cli-log",
@@ -630,7 +630,7 @@ dependencies = [
 
 [[package]]
 name = "kraban-config"
-version = "0.4.1"
+version = "0.4.2"
 dependencies = [
  "color-eyre",
  "figment",
@@ -655,7 +655,7 @@ dependencies = [
 
 [[package]]
 name = "kraban-state"
-version = "0.4.1"
+version = "0.4.2"
 dependencies = [
  "chrono",
  "cli-log",
@@ -675,7 +675,7 @@ dependencies = [
 
 [[package]]
 name = "kraban-ui"
-version = "0.4.1"
+version = "0.4.2"
 dependencies = [
  "chrono",
  "cli-log",
