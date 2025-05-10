@@ -1,7 +1,7 @@
 use clap::ArgMatches;
 use cli_log::{debug, info};
 use color_eyre::Result;
-use crossterm::event::{self, Event, KeyCode, KeyEvent, KeyEventKind};
+use crossterm::event::{self, Event, KeyCode, KeyEvent, KeyEventKind, KeyModifiers};
 use kraban_config::Config;
 use kraban_state::{State, SwitchToIndex};
 use kraban_ui::Ui;
@@ -67,7 +67,12 @@ impl App {
     }
 
     fn on_key(&mut self, key_event: KeyEvent) -> Result<()> {
-        if let KeyCode::Char('q') = key_event.code {
+        if let KeyEvent {
+            code: KeyCode::Char('q'),
+            modifiers: KeyModifiers::CONTROL,
+            ..
+        } = key_event
+        {
             info!("Quiting");
             self.running = false;
         } else {

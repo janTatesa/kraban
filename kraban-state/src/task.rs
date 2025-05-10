@@ -9,8 +9,10 @@ use derivative::Derivative;
 use kraban_config::Config;
 use kraban_lib::{chrono_date_to_time_date, compare_due_dates};
 use serde::{Deserialize, Serialize};
+use serde_with::skip_serializing_none;
 use time::Date;
 
+#[skip_serializing_none]
 #[derive(Serialize, Deserialize, Default, PartialEq, Eq, Derivative, Clone)]
 pub struct Task {
     // Priority and difficulty should be on top so it's sorted properly

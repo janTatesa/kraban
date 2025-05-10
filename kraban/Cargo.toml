@@ -9,6 +9,7 @@ categories.workspace = true
 keywords.workspace = true
 repository.workspace = true
 homepage.workspace = true
+readme.workspace = true
 
 [dependencies]
 clap = { version = "4.5.34", features = ["cargo", "env"] }
@@ -19,5 +20,3 @@ cli-log.workspace = true
 color-eyre.workspace = true
 crossterm.workspace = true
 ratatui.workspace = true
-
-
