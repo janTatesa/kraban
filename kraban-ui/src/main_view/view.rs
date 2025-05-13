@@ -18,8 +18,13 @@ impl ViewTrait for MainView {
     }
 
     fn refresh_on_state_change(&mut self, context: Context) {
-        self.list_state_mut()
-            .update_max_index(context.state.projects().len().checked_sub(1))
+        let max_index = match self {
+            MainView::Projects(_) => context.state.projects().len(),
+            MainView::DueTasks(_) => context.state.due_tasks().len(),
+        }
+        .checked_sub(1);
+
+        self.list_state_mut().update_max_index(max_index)
     }
 
     fn switch_to_index(&mut self, index: usize) {

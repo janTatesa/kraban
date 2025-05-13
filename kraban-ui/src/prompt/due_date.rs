@@ -1,5 +1,3 @@
-use std::{collections::HashMap, iter};
-
 use crate::{Action, Component, Context, Item, StateAction, keyhints::KeyHints, state_action};
 use chrono::{Days, Local, Months};
 use crossterm::event::{KeyCode, KeyEvent};
@@ -13,6 +11,7 @@ use ratatui::{
         calendar::{CalendarEventStore, Monthly},
     },
 };
+use std::{collections::HashMap, iter};
 
 use super::PromptTrait;
 

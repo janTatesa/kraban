@@ -30,8 +30,7 @@ impl ListState {
             value: (self
                 .0
                 .map(|wrapping_usize| wrapping_usize.value)
-                .unwrap_or_default()
-                + 1)
+                .unwrap_or_default())
                 % (max_index + 1),
         });
         info!("{:?}", self)
