@@ -59,6 +59,7 @@ impl App {
             ) => self.on_key(key)?,
             Event::FocusGained => {
                 self.state = State::new(self.is_testing)?;
+                self.state.compile_due_tasks_list(&self.config);
                 self.ui.refresh_on_state_change(context!(self));
             }
             _ => {}

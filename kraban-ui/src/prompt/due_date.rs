@@ -1,18 +1,18 @@
-use std::{collections::HashMap, iter};
-
-use crate::{Action, Component, Context, Item, StateAction, keyhints::KeyHints, state_action};
+use crate::{keyhints::KeyHints, state_action, Action, Component, Context, Item, StateAction};
 use chrono::{Days, Local, Months};
 use crossterm::event::{KeyCode, KeyEvent};
-use kraban_lib::{ChronoDate, chrono_date_to_time_date, time_date_to_chrono_date};
+use itertools::chain;
+use kraban_lib::{chrono_date_to_time_date, time_date_to_chrono_date, ChronoDate};
 use ratatui::{
     buffer::Buffer,
     layout::Rect,
     style::{Color, Style, Stylize},
     widgets::{
-        Widget,
         calendar::{CalendarEventStore, Monthly},
+        Widget,
     },
 };
+use std::{collections::HashMap, iter};
 
 use super::PromptTrait;
 
