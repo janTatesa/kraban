@@ -1,15 +1,14 @@
-use crate::{keyhints::KeyHints, state_action, Action, Component, Context, Item, StateAction};
+use crate::{Action, Component, Context, Item, StateAction, keyhints::KeyHints, state_action};
 use chrono::{Days, Local, Months};
 use crossterm::event::{KeyCode, KeyEvent};
-use itertools::chain;
-use kraban_lib::{chrono_date_to_time_date, time_date_to_chrono_date, ChronoDate};
+use kraban_lib::{ChronoDate, chrono_date_to_time_date, time_date_to_chrono_date};
 use ratatui::{
     buffer::Buffer,
     layout::Rect,
     style::{Color, Style, Stylize},
     widgets::{
-        calendar::{CalendarEventStore, Monthly},
         Widget,
+        calendar::{CalendarEventStore, Monthly},
     },
 };
 use std::{collections::HashMap, iter};
