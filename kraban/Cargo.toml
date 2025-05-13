@@ -12,7 +12,7 @@ homepage.workspace = true
 readme.workspace = true
 
 [dependencies]
-clap = { version = "4.5.34", features = ["cargo", "env"] }
+clap = { version = "4.5.38", features = ["cargo", "env"] }
 kraban-ui.workspace = true
 kraban-state.workspace = true
 kraban-config.workspace = true
