@@ -198,7 +198,7 @@ pub enum Action {
     New(String),
     Rename(String),
     MoveToColumn(String),
-    SetTaskDueDate(Date),
+    SetTaskDueDate(Option<Date>),
 }
 
 impl From<Option<Difficulty>> for Action {
