@@ -4,7 +4,7 @@ members = ["kraban", "kraban-ui", "kraban-state", "kraban-config", "kraban-lib"]
 default-members = ["kraban"]
 
 [workspace.package]
-version = "0.4.3"
+version = "0.4.4"
 authors = ["Tatesa Uradnik <taduradnik@proton.me>"]
 description = "A rust kanban board tui"
 license = "MIT"
@@ -31,7 +31,7 @@ strum = "0.27.1"
 strum_macros = "0.27.1"
 time = { version = "0.3.41", features = ["serde"] }
 chrono = { version = "0.4.40", features = ["now", "serde"] }
-kraban-ui = {path = "./kraban-ui", version = "0.4.3"}
-kraban-state = {path = "./kraban-state", version = "0.4.3"}
-kraban-config = {path = "./kraban-config", version = "0.4.3"}
-kraban-lib = {path = "./kraban-lib", version = "0.4.3"}
+kraban-ui = {path = "./kraban-ui", version = "0.4.4"}
+kraban-state = {path = "./kraban-state", version = "0.4.4"}
+kraban-config = {path = "./kraban-config", version = "0.4.4"}
+kraban-lib = {path = "./kraban-lib", version = "0.4.4"}
