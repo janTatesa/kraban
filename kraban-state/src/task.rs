@@ -96,7 +96,7 @@ impl State {
                 None
             }
             Action::SetTaskDueDate(due_date) => Self::modifing_action(index, list, |task| Task {
-                due_date: Some(due_date),
+                due_date,
                 due_date_manually_set: true,
                 ..task
             }),

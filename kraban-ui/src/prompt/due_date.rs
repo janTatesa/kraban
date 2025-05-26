@@ -58,9 +58,12 @@ impl Component for DueDatePrompt {
             KeyCode::Up => self.current_date.checked_sub_days(Days::new(DAYS_IN_WEEK)),
             KeyCode::Down => self.current_date.checked_add_days(Days::new(DAYS_IN_WEEK)),
             KeyCode::Enter => {
-                return state_action(StateAction::SetTaskDueDate(chrono_date_to_time_date(
+                return state_action(StateAction::SetTaskDueDate(Some(chrono_date_to_time_date(
                     self.current_date,
-                )));
+                ))));
+            }
+            KeyCode::Delete | KeyCode::Backspace => {
+                return state_action(StateAction::SetTaskDueDate(None));
             }
             _ => None,
         }?;
@@ -69,6 +72,7 @@ impl Component for DueDatePrompt {
 
     fn key_hints(&self, _context: Context) -> KeyHints {
         vec![
+            ("Delete/Backspace", "Delete due date"),
             ("Tab/Backtab", "Switch month"),
             ("Arrows", "Pick day"),
             ("Enter", "Submit"),

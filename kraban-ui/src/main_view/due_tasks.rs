@@ -23,8 +23,14 @@ impl MainView {
         key_event: KeyEvent,
         context: Context,
     ) -> Option<Action> {
-        let due_task =
-            &context.state.due_tasks().inner()[self.list_state().focused_item().unwrap()];
+        if let KeyCode::Tab = key_event.code {
+            *self = MainView::Projects(ListState::new(
+                context.state.projects().len().checked_sub(1),
+            ));
+            return None;
+        }
+
+        let due_task = &context.state.due_tasks().inner()[self.list_state().focused_item()?];
         match key_event.code {
             KeyCode::Enter => switch_to_view(TasksView::with_specific_task(
                 context
@@ -40,12 +46,6 @@ impl MainView {
                 due_task.index,
                 context,
             )),
-            KeyCode::Tab => {
-                *self = MainView::Projects(ListState::new(
-                    context.state.projects().len().checked_sub(1),
-                ));
-                None
-            }
             _ => self.list_state_mut().on_key(key_event, context),
         }
     }
