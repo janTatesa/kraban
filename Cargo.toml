@@ -23,7 +23,7 @@ ratatui = { version = "0.29.0", features = [
   "unstable-rendered-line-info",
   "widget-calendar",
 ] }
-color-eyre = "0.6.3"
+color-eyre = "0.6.5"
 serde = { version = "1.0.219", features = ["derive"] }
 tap = "1.0.1"
 cli-log = "2.1.0"
