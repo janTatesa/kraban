@@ -13,10 +13,10 @@ use ratatui::{
 use tap::Tap;
 use widgets::main_block;
 
-use crate::{Context, ViewTrait};
+use crate::{Context, ViewTrait, action::Action};
 
 use super::{
-    Action, Ui,
+    Ui,
     keyhints::{self, KeyHintsWidget},
     widgets,
 };
@@ -25,12 +25,12 @@ use super::{
 pub(crate) trait Component: Debug {
     fn on_key(&mut self, key_event: KeyEvent, context: Context) -> Option<Action>;
     fn key_hints(&self, context: Context) -> KeyHints;
-    fn render(&self, area: Rect, buf: &mut Buffer, context: Context);
+    fn render(&self, area: Rect, buf: &mut Buffer, context: Context, focused: bool);
 }
 
 impl Component for Ui {
     fn on_key(&mut self, key_event: KeyEvent, context: Context) -> Option<Action> {
-        match (key_event, &mut self.prompt) {
+        match (key_event, &mut self.prompt_stack.last_mut()) {
             (
                 KeyEvent {
                     code: KeyCode::Esc,
@@ -45,7 +45,7 @@ impl Component for Ui {
     }
 
     fn key_hints(&self, context: Context) -> KeyHints {
-        match &self.prompt {
+        match &self.prompt_stack.last() {
             Some(prompt) => prompt
                 .key_hints(context)
                 .tap_mut(|v| v.push(("Esc", "Exit Prompt"))),
@@ -53,7 +53,7 @@ impl Component for Ui {
         }
     }
 
-    fn render(&self, terminal_area: Rect, buf: &mut Buffer, context: Context) {
+    fn render(&self, terminal_area: Rect, buf: &mut Buffer, context: Context, _focused: bool) {
         let key_hints = context
             .config
             .show_key_hints
@@ -64,16 +64,15 @@ impl Component for Ui {
                 key_hints
                     .as_ref()
                     .map(|k| k.lines.len() as u16)
-                    .unwrap_or_default(),
+                    .unwrap_or(0),
             ),
         ])
         .split(terminal_area);
 
         let block = main_block(context.config).title(self.view.title(context));
-        let block = if let Some(title) = self.view.right_title() {
-            block.title(Line::raw(title).right_aligned())
-        } else {
-            block
+        let block = match self.view.right_title() {
+            Some(title) => block.title(Line::raw(title).right_aligned()),
+            None => block,
         };
 
         let main_app_area = block.inner(layout[0]);
@@ -82,8 +81,9 @@ impl Component for Ui {
             key_hints.render(layout[1], buf)
         }
 
-        self.view.render(main_app_area, buf, context);
-        if let Some(prompt) = &self.prompt {
+        self.view
+            .render(main_app_area, buf, context, self.prompt_stack.is_empty());
+        if let Some(prompt) = &self.prompt_stack.last() {
             buf.set_style(main_app_area, Style::default().dim());
             self.render_prompt(main_app_area, buf, prompt, context);
         }

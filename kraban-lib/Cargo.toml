@@ -12,7 +12,7 @@ homepage.workspace = true
 readme.workspace = true
 
 [dependencies]
-dirs = "6.0.0"
+dirs.workspace = true
 time.workspace = true
 chrono.workspace = true
 color-eyre.workspace = true

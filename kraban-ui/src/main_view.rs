@@ -5,31 +5,31 @@ mod view;
 
 use std::fmt::Debug;
 
-use super::list::ListState;
-use crate::Context;
+use due_tasks::DueTaskList;
+use projects::ProjectsTable;
 
-#[derive(Debug, Clone, Copy)]
-pub enum MainView {
-    Projects(ListState),
-    DueTasks(ListState),
+use crate::table::{Table, TableQuery, table};
+
+#[derive(Debug, Clone, Copy, Default)]
+pub struct MainView {
+    projects: table!(ProjectsTable),
+    due_tasks: table!(DueTaskList),
+    focused_list: FocusedList,
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Default)]
+enum FocusedList {
+    #[default]
+    Projects,
+    DueTasks,
 }
 
 impl MainView {
-    pub fn new(max_index: Option<usize>) -> Self {
-        Self::Projects(ListState::new(max_index))
+    pub fn with_focused_project(project: usize) -> Self {
+        Self {
+            projects: Table::with_default_index(project, ProjectsTable),
+            due_tasks: Table::default(),
+            focused_list: FocusedList::Projects,
+        }
     }
-
-    fn list_state(&self) -> &ListState {
-        let (Self::Projects(list_state) | Self::DueTasks(list_state)) = self;
-        list_state
-    }
-
-    fn list_state_mut(&mut self) -> &mut ListState {
-        let (Self::Projects(list_state) | Self::DueTasks(list_state)) = self;
-        list_state
-    }
-}
-
-fn project_title(context: Context, index: usize) -> String {
-    context.state.projects()[index].title.clone()
 }

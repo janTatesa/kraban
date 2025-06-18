@@ -1,132 +1,91 @@
-use cli_log::info;
-use crossterm::event::{KeyCode, KeyEvent};
-use ratatui::{buffer::Buffer, layout::Rect, widgets::ListState as RatatuiListState};
+use crossterm::event::{KeyCode, KeyEvent, KeyModifiers};
+use kraban_lib::wrapping_usize::WrappingUsize;
+use ratatui::{
+    buffer::Buffer,
+    layout::Rect,
+    style::{Style, Stylize},
+    text::{Line, Text},
+    widgets::{List as ListWidget, ListItem, ListState, StatefulWidget, Widget},
+};
+use tap::Tap;
 
-use crate::Context;
+use std::fmt::Debug;
 
-use super::{Action, Component, keyhints::KeyHints};
+use crate::{Context, action::Action};
 
-#[derive(Debug, Default, Clone, Copy)]
-pub struct ListState(Option<WrappingUsize>);
-impl ListState {
-    pub fn new(max_index: Option<usize>) -> Self {
-        ListState(max_index.map(WrappingUsize::new))
-    }
+use super::{Component, keyhints::KeyHints};
 
-    pub const fn with_default_index(default_index: usize, max_index: usize) -> Self {
-        ListState(Some(WrappingUsize {
-            value: default_index,
-            max: max_index,
-        }))
-    }
-
-    pub fn focused_item(&self) -> Option<usize> {
-        self.0.map(|wrapping| wrapping.value)
-    }
-
-    pub fn update_max_index(&mut self, max_index: Option<usize>) {
-        self.0 = max_index.map(|max_index| WrappingUsize {
-            max: max_index,
-            value: (self
-                .0
-                .map(|wrapping_usize| wrapping_usize.value)
-                .unwrap_or_default())
-                % (max_index + 1),
-        });
-        info!("{:?}", self)
-    }
-
-    pub fn switch_to_index(&mut self, index: usize) {
-        self.0 = self.0.map(|wrapping_usize| {
-            if wrapping_usize.max < index {
-                panic!("There should always be a correct index passed");
-            }
-            WrappingUsize {
-                value: index,
-                ..wrapping_usize
-            }
-        })
-    }
+pub trait ListQuery: Debug {
+    fn get_items<'a>(&self, context: Context<'a>) -> impl Iterator<Item = Line<'a>>;
+    fn on_key(&self, index: usize, key_event: KeyEvent, context: Context) -> Option<Action>;
+    fn keyhints(&self, context: Context) -> KeyHints;
 }
 
-impl Component for ListState {
-    fn on_key(&mut self, key_event: KeyEvent, _context: Context) -> Option<Action> {
-        match key_event.code {
-            KeyCode::Up => {
-                self.0 = self.0.map(|num| num.decrement());
-                None
-            }
-            KeyCode::Down => {
-                self.0 = self.0.map(|num| num.increment());
-                None
-            }
-            _ => None,
+impl<Q: ListQuery> Component for List<Q> {
+    fn on_key(&mut self, key_event: KeyEvent, context: Context) -> Option<Action> {
+        let selected = &mut self.selected;
+        match (key_event.code, key_event.modifiers) {
+            (KeyCode::Down, KeyModifiers::NONE) => *selected = selected.increment(),
+            (KeyCode::Up, KeyModifiers::NONE) => *selected = selected.decrement(),
+            (KeyCode::Home, KeyModifiers::NONE) => *selected = selected.set_value(0),
+            (KeyCode::End, KeyModifiers::NONE) => *selected = selected.set_value(0).decrement(),
+            _ => return self.query.on_key(self.selected(), key_event, context),
+        }
+        None
+    }
+
+    fn key_hints(&self, context: Context) -> KeyHints {
+        vec![
+            ("Up/Down", "Select previous/next"),
+            ("Home/End", "Go to start/end"),
+        ]
+        .tap_mut(|v| v.extend(self.query.keyhints(context)))
+    }
+
+    fn render(&self, area: Rect, buf: &mut Buffer, context: Context, focused: bool) {
+        let selected = self.selected();
+        let list = self.query.get_items(context);
+        match focused {
+            true => StatefulWidget::render(
+                list_widget(list),
+                area,
+                buf,
+                &mut ListState::default().with_selected(Some(selected)),
+            ),
+            false => Widget::render(Text::from_iter(list), area, buf),
         }
     }
-
-    fn key_hints(&self, _context: Context) -> KeyHints {
-        vec![("Up/Down", "Select previous/next")]
-    }
-
-    fn render(&self, _area: Rect, _buf: &mut Buffer, _context: Context) {
-        unimplemented!()
-    }
 }
 
-#[derive(Debug, Default, Clone, Copy)]
-pub struct WrappingUsize {
-    value: usize,
-    max: usize,
+fn list_widget<'a, T>(items: T) -> ListWidget<'a>
+where
+    T: IntoIterator,
+    T::Item: Into<ListItem<'a>>,
+{
+    ListWidget::new(items)
+        .highlight_style(Style::new().on_black())
+        .highlight_symbol(">")
 }
 
-impl WrappingUsize {
-    pub const fn new(max: usize) -> Self {
-        Self::with_value(0, max)
+#[derive(Debug, Clone, Copy)]
+pub struct List<Q> {
+    selected: WrappingUsize,
+    query: Q,
+}
+
+impl<Q> List<Q> {
+    pub const fn new(len: usize, query: Q) -> Self {
+        Self::with_selected(0, len, query)
     }
 
-    pub const fn with_value(value: usize, max: usize) -> Self {
-        Self { value, max }
-    }
-
-    #[must_use = "Method takes self"]
-    pub const fn increment(self) -> Self {
+    pub const fn with_selected(selected: usize, len: usize, query: Q) -> Self {
         Self {
-            value: (self.value + 1) % (self.max + 1),
-            ..self
+            selected: WrappingUsize::with_value(selected, len - 1),
+            query,
         }
     }
 
-    #[must_use = "Method takes self"]
-    pub const fn decrement(self) -> Self {
-        Self {
-            value: if self.value == 0 {
-                self.max
-            } else {
-                self.value - 1
-            },
-            ..self
-        }
-    }
-
-    pub fn max(&self) -> usize {
-        self.max
-    }
-}
-
-impl From<WrappingUsize> for RatatuiListState {
-    fn from(value: WrappingUsize) -> Self {
-        RatatuiListState::default().with_selected(Some(value.into()))
-    }
-}
-
-impl From<WrappingUsize> for usize {
-    fn from(value: WrappingUsize) -> Self {
-        value.value
-    }
-}
-
-impl From<ListState> for RatatuiListState {
-    fn from(value: ListState) -> Self {
-        RatatuiListState::default().with_selected(value.focused_item())
+    pub fn selected(&self) -> usize {
+        self.selected.value()
     }
 }

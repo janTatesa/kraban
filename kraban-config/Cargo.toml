@@ -12,7 +12,7 @@ homepage.workspace = true
 readme.workspace = true
 
 [dependencies]
-figment = { version = "0.10.19", features = ["toml"] }
+figment.workspace = true
 kraban-lib.workspace = true
 color-eyre.workspace = true
 ratatui.workspace = true

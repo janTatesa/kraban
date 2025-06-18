@@ -1,10 +1,29 @@
 use core::panic;
-use std::collections::HashMap;
 
+use cli_log::info;
+use color_eyre::eyre::Result;
+use hashbrown::HashMap;
 use serde_json::Value;
 
-use super::{Priority, Project, State, Task, defaultmap::DefaultMap, sorted_vec::SortedVec};
+use super::{Priority, Project, State, Task, defaultmap::DefaultMap, sorted_vec::ReversedSortedVec};
 impl State {
+    pub const BASILK_VERSION: u64 = 0;
+    // IMPORTANT: update this everytime `State` is updated incompatibly
+    pub const CURRENT_VERSION: u64 = 1;
+
+    #[allow(clippy::match_overlapping_arm)]
+    pub(super) fn from_version(version: u64, value: Value) -> Result<Self> {
+        info!(
+            "Json version {version}, latest version {}",
+            Self::CURRENT_VERSION
+        );
+        match version {
+            Self::BASILK_VERSION => Ok(Self::from_basilk(value)),
+            Self::CURRENT_VERSION => Ok(serde_json::from_value(value)?),
+            Self::CURRENT_VERSION.. => unreachable!(),
+        }
+    }
+
     pub(super) fn from_basilk(mut value: Value) -> Self {
         Self {
             projects: value
@@ -19,7 +38,7 @@ impl State {
 }
 
 fn process_basilk_project(basilk_project: &mut Value) -> Project {
-    let mut columns: DefaultMap<String, SortedVec<Task>> =
+    let mut columns: DefaultMap<String, ReversedSortedVec<Task>> =
         DefaultMap::new(HashMap::with_capacity(3));
     basilk_project["tasks"]
         .as_array_mut()
@@ -27,7 +46,7 @@ fn process_basilk_project(basilk_project: &mut Value) -> Project {
         .iter_mut()
         .map(process_basilk_task)
         .for_each(|(column, task)| {
-            columns.get_mut(column.to_string()).push(task);
+            columns.get_mut(column).push(task);
         });
     Project {
         title: basilk_project["title"].as_str().unwrap().to_string(),

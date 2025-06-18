@@ -1,132 +1,94 @@
+mod action;
 mod component;
+mod context;
 mod keyhints;
 mod list;
 mod main_view;
 mod prompt;
+mod table;
 mod task;
 mod view;
 mod widgets;
 
-use cli_log::info;
+use action::StateAction;
+use arrayvec::ArrayVec;
+use cli_log::error;
 use component::Component;
-use crossterm::event::KeyEvent;
-use kraban_config::Config;
-use kraban_state::{CurrentList, Priority, State};
+pub use context::Context;
+use crossterm::event::{KeyCode, KeyEvent};
+use derivative::Derivative;
+use kraban_state::CurrentList;
 use main_view::MainView;
-use prompt::{EnumPrompt, Prompt};
-use ratatui::{buffer::Buffer, layout::Rect, style::Stylize, text::Span};
+use prompt::Prompt;
+use ratatui::{
+    buffer::Buffer,
+    layout::Rect,
+    style::{Color, Stylize},
+    text::Line,
+};
 use std::fmt::Debug;
+use time::{Date, OffsetDateTime};
 use view::{Item, View, ViewTrait};
 
-type StateAction = kraban_state::Action;
-#[derive(Clone, Copy)]
-pub struct Context<'a> {
-    pub state: &'a State,
-    pub config: &'a Config,
-}
-
-#[macro_export]
-macro_rules! context {
-    ($self:expr) => {
-        Context {
-            state: &$self.state,
-            config: &$self.config,
-        }
-    };
-}
-
-#[derive(Debug)]
+#[derive(Debug, Derivative)]
+#[derivative(Default)]
 pub struct Ui {
+    #[derivative(Default(value = "MainView::default().into()"))]
     view: View,
-    prompt: Option<Prompt>,
-}
-
-fn switch_to_view<T: Into<View>>(view: T) -> Option<Action> {
-    Some(Action::SwitchToView(view.into()))
-}
-
-fn open_prompt<T: Into<Prompt>>(prompt: T) -> Option<Action> {
-    Some(Action::OpenPrompt(prompt.into()))
-}
-
-fn state_action(state_action: StateAction) -> Option<Action> {
-    Some(Action::State(state_action))
-}
-
-#[derive(Debug)]
-enum Action {
-    ClosePrompt,
-    SwitchToView(View),
-    OpenPrompt(Prompt),
-    State(StateAction),
+    prompt_stack: ArrayVec<Prompt, 4>,
 }
 
 impl Ui {
-    pub fn new(projects_len: Option<usize>) -> Self {
-        Self {
-            view: View::from(MainView::new(projects_len)),
-            prompt: None,
-        }
-    }
-
     // Context cannot be used because state would be referenced both mutably and immutably
-    pub fn current_list<'a>(&self, config: &'a Config) -> CurrentList<'a> {
-        self.view.current_list(config)
+    pub fn current_list(&self) -> CurrentList {
+        self.view.current_list()
     }
 
     pub fn redraw(&self, area: Rect, buf: &mut Buffer, context: Context) {
-        self.render(area, buf, context);
-    }
-
-    pub fn get_action(&mut self, key_event: KeyEvent, context: Context) -> Option<StateAction> {
-        let action = self.on_key(key_event, context)?;
-        self.handle_action(action, context)
+        self.render(area, buf, context, true);
     }
 
     pub fn in_main_view(&self) -> bool {
         matches!(self.view, View::MainView(_))
     }
 
-    fn handle_action(&mut self, action: Action, context: Context) -> Option<StateAction> {
-        info!("Performing {:?}", action);
-        match action {
-            Action::SwitchToView(view) => self.view = view,
-            Action::OpenPrompt(prompt) => self.prompt = Some(prompt),
-            Action::ClosePrompt => self.prompt = None,
-            Action::State(action @ StateAction::New(_)) => {
-                self.prompt = None;
-                if context.config.always_open_priority_prompt {
-                    let enum_prompt: EnumPrompt<Priority> = EnumPrompt::new(None);
-                    self.prompt = Some(enum_prompt.into());
-                };
-                return Some(action);
-            }
-            Action::State(action) => {
-                // So far all prompts exit after doing their actions
-                self.prompt = None;
-                return Some(action);
-            }
-        }
-        None
-    }
-
     pub fn switch_to_index(&mut self, index: usize) {
         self.view.switch_to_index(index);
     }
 
-    pub fn refresh_on_state_change(&mut self, context: Context) {
-        self.view.refresh_on_state_change(context);
+    pub fn refresh_list_max_indexes(&mut self, context: Context) {
+        self.view.refresh_max_indexes(context);
     }
 }
 
-// Traits like difficulty priority etc
-fn item_trait<'a, T>(item_trait: T) -> [Span<'a>; 3]
-where
-    Span<'a>: From<T>,
-{
-    [
-        Span::raw("[").dark_gray(),
-        Span::from(item_trait),
-        Span::raw("] ").dark_gray(),
-    ]
+trait KeyNoModifiers {
+    fn keycode_without_modifiers(self) -> Option<KeyCode>;
+}
+
+impl KeyNoModifiers for KeyEvent {
+    fn keycode_without_modifiers(self) -> Option<KeyCode> {
+        self.modifiers.is_empty().then_some(self.code)
+    }
+}
+
+pub fn date_to_line(date: Date) -> Line<'static> {
+    let duration = date
+        - OffsetDateTime::now_local()
+            .inspect_err(|e| error!("Failed to get local timezone {e}, using utc"))
+            .unwrap_or(OffsetDateTime::now_utc())
+            .date();
+
+    let color = match duration.whole_days() {
+        ..0 => Color::Red,
+        0 => Color::Yellow,
+        1..7 => Color::Green,
+        7..30 => Color::Blue,
+        _ => Color::Magenta,
+    };
+
+    date.to_string().fg(color).underlined().into()
+}
+
+fn no_property() -> Line<'static> {
+    "None".italic().dim().into()
 }

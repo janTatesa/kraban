@@ -1,82 +1,85 @@
-use std::iter;
-
 use crossterm::event::{KeyCode, KeyEvent};
-use kraban_lib::IterExt;
 use kraban_state::DueTask;
 use ratatui::{
+    layout::Constraint,
     style::{Color, Stylize},
-    text::{Line, Span},
+    text::{Line, ToLine},
 };
+use tap::Pipe;
 
 use crate::{
-    Action, Component, Context, item_trait,
-    list::ListState,
-    switch_to_view,
-    task::{TasksView, date_to_span},
+    Context, KeyNoModifiers,
+    action::{Action, switch_to_view},
+    date_to_line, get,
+    keyhints::KeyHints,
+    no_property,
+    table::{LARGE_COLUMN_SIZE, SMALL_COLUMN_SIZE, TableQuery},
+    task::TasksView,
 };
 
-use super::MainView;
-
-impl MainView {
-    pub(super) fn on_key_due_tasks(
-        &mut self,
-        key_event: KeyEvent,
-        context: Context,
-    ) -> Option<Action> {
-        if let KeyCode::Tab = key_event.code {
-            *self = MainView::Projects(ListState::new(
-                context.state.projects().len().checked_sub(1),
-            ));
-            return None;
-        }
-
-        let due_task = &context.state.due_tasks().inner()[self.list_state().focused_item()?];
-        match key_event.code {
-            KeyCode::Enter => switch_to_view(TasksView::with_specific_task(
-                context
-                    .state
-                    .projects()
-                    .iter()
-                    .enumerate()
-                    .find_map(|(index, project)| {
-                        (project.title == due_task.project_title).then_some(index)
-                    })
-                    .unwrap(),
-                &due_task.column_name,
-                due_task.index,
-                context,
-            )),
-            _ => self.list_state_mut().on_key(key_event, context),
+#[derive(Debug, Clone, Copy, Default)]
+pub struct DueTaskList;
+impl TableQuery<6> for DueTaskList {
+    fn on_key(&self, index: Option<usize>, key: KeyEvent, context: Context) -> Option<Action> {
+        let due_task = get!(context, due_tasks, index?);
+        match key.keycode_without_modifiers()? {
+            KeyCode::Enter => switch_to_task(context, due_task),
+            _ => None,
         }
     }
 
-    pub(super) fn due_task_list<'a>(&self, context: Context<'a>) -> impl Iterator<Item = Line<'a>> {
-        context
-            .state
-            .due_tasks()
-            .inner()
-            .iter()
-            .map(|task| due_task_to_line(task, context.config.app_color))
-            .default("You have no scheduled tasks".italic().into())
+    fn keyhints(&self, _context: Context) -> KeyHints {
+        vec![("Enter", "Switch to task")]
+    }
+
+    fn len(&self, context: Context) -> usize {
+        get!(context, due_tasks).len()
+    }
+
+    fn header(&self) -> [&'static str; 6] {
+        ["Due date", "Project", "Column", "Prior.", "Diffi.", "Title"]
+    }
+
+    fn constraints(&self, _context: Context) -> [Constraint; 6] {
+        [
+            Constraint::Length(LARGE_COLUMN_SIZE),
+            Constraint::Length(LARGE_COLUMN_SIZE),
+            Constraint::Length(LARGE_COLUMN_SIZE),
+            Constraint::Length(SMALL_COLUMN_SIZE),
+            Constraint::Length(SMALL_COLUMN_SIZE),
+            Constraint::Min(0),
+        ]
+    }
+
+    fn rows<'a>(&self, context: Context<'a>) -> impl Iterator<Item = [Line<'a>; 6]> {
+        get!(context, due_tasks).iter().map(|task| {
+            [
+                task.task
+                    .due_date
+                    .map(date_to_line)
+                    .unwrap_or(no_property()),
+                task.project_title
+                    .as_str()
+                    .pipe(Line::raw)
+                    .fg::<Color>(task.project_priority.map(|p| p.into()).unwrap_or_default()),
+                task.column_name.to_line().fg(task.column_color).italic(),
+                task.task.priority.map(Line::from).unwrap_or(no_property()),
+                task.task
+                    .difficulty
+                    .map(Line::from)
+                    .unwrap_or(no_property()),
+                task.task.title.as_str().pipe(Line::raw),
+            ]
+        })
     }
 }
 
-fn due_task_to_line(task: &DueTask, app_color: Color) -> Line<'_> {
-    Line::from(
-        task.task
-            .due_date
-            .into_iter()
-            .map(date_to_span)
-            .flat_map(item_trait)
-            .chain(item_trait(task.project_title.clone().fg(app_color)))
-            .chain(item_trait(
-                Span::raw(task.column_name.clone())
-                    .fg(task.column_color)
-                    .italic(),
-            ))
-            .chain(task.task.priority.into_iter().flat_map(item_trait))
-            .chain(task.task.difficulty.into_iter().flat_map(item_trait))
-            .chain(iter::once(Span::raw(task.task.title.clone())))
-            .collect::<Vec<Span<'_>>>(),
+fn switch_to_task(context: Context<'_>, due_task: &DueTask) -> Option<Action> {
+    TasksView::with_specific_task(
+        due_task.project_index,
+        &due_task.column_name,
+        due_task.index,
+        context,
     )
+    .pipe(switch_to_view)
 }
