@@ -1,33 +1,42 @@
-use kraban_config::Config;
+use std::borrow::Cow;
+
 use kraban_state::CurrentList;
 
 use crate::{Context, Item, ViewTrait};
 
-use super::MainView;
+use super::{FocusedList, MainView};
 
 impl ViewTrait for MainView {
     fn item(&self) -> Item {
-        Item::Project
-    }
-
-    fn current_list<'a>(&self, _config: &'a Config) -> CurrentList<'a> {
-        match self {
-            MainView::Projects(list_state) => CurrentList::Projects(list_state.focused_item()),
-            MainView::DueTasks(list_state) => CurrentList::DueTasks(list_state.focused_item()),
+        match self.focused_list {
+            FocusedList::Projects => Item::Project,
+            FocusedList::DueTasks => Item::Task,
         }
     }
 
-    fn refresh_on_state_change(&mut self, context: Context) {
-        self.list_state_mut()
-            .update_max_index(context.state.projects().len().checked_sub(1))
+    fn current_list(&self) -> CurrentList {
+        match self.focused_list {
+            FocusedList::Projects => CurrentList::Projects(self.projects.selected()),
+            FocusedList::DueTasks => CurrentList::DueTasks(self.projects.selected()),
+        }
+    }
+
+    fn refresh_max_indexes(&mut self, context: Context) {
+        match self.focused_list {
+            FocusedList::Projects => self.projects.update_max_index(context),
+            FocusedList::DueTasks => self.due_tasks.update_max_index(context),
+        }
     }
 
     fn switch_to_index(&mut self, index: usize) {
-        self.list_state_mut().switch_to_index(index);
+        match self.focused_list {
+            FocusedList::Projects => self.projects.select(index),
+            FocusedList::DueTasks => self.due_tasks.select(index),
+        }
     }
 
-    fn title(&self, _context: Context) -> String {
-        "Projects".to_string()
+    fn title(&self, _context: Context) -> Cow<'static, str> {
+        "Projects".into()
     }
 
     fn right_title(&self) -> Option<&'static str> {

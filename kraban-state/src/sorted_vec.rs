@@ -5,12 +5,13 @@ use serde::{Deserialize, Serialize};
 use tap::Tap;
 
 /// A vector that is sorted from the greatest to lowest element
-#[derive(Derivative, Serialize, Deserialize)]
+#[derive(Derivative, Serialize, Deserialize, Debug)]
 #[derivative(Default(bound = ""))]
-pub struct SortedVec<T: Ord>(Vec<T>);
-impl<T: Ord> SortedVec<T> {
+pub struct ReversedSortedVec<T: Ord>(Vec<T>);
+impl<T: Ord> ReversedSortedVec<T> {
     pub fn new(mut vec: Vec<T>) -> Self {
         vec.sort();
+        vec.reverse();
         Self(vec)
     }
 
@@ -37,6 +38,10 @@ impl<T: Ord> SortedVec<T> {
         &self.0
     }
 
+    pub fn inner_owned(self) -> Vec<T> {
+        self.0
+    }
+
     pub fn remove(&mut self, index: usize) -> T {
         self.0.remove(index)
     }
@@ -48,7 +53,7 @@ impl<T: Ord> SortedVec<T> {
     }
 }
 
-impl<T: Ord> FromIterator<T> for SortedVec<T> {
+impl<T: Ord> FromIterator<T> for ReversedSortedVec<T> {
     fn from_iter<I: IntoIterator<Item = T>>(iter: I) -> Self {
         Self(
             iter.into_iter()
@@ -58,7 +63,7 @@ impl<T: Ord> FromIterator<T> for SortedVec<T> {
     }
 }
 
-impl<T: Ord> Index<usize> for SortedVec<T> {
+impl<T: Ord> Index<usize> for ReversedSortedVec<T> {
     type Output = T;
 
     fn index(&self, index: usize) -> &Self::Output {
@@ -66,7 +71,7 @@ impl<T: Ord> Index<usize> for SortedVec<T> {
     }
 }
 
-impl<T: Ord> IndexMut<usize> for SortedVec<T> {
+impl<T: Ord> IndexMut<usize> for ReversedSortedVec<T> {
     fn index_mut(&mut self, index: usize) -> &mut Self::Output {
         self.0.get_mut(index).unwrap()
     }

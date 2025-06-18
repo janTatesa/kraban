@@ -1,13 +1,19 @@
+use std::borrow::Cow;
+
 use crossterm::event::{KeyCode, KeyEvent};
 use ratatui::{
     buffer::Buffer,
     layout::Rect,
     style::Style,
-    text::{Line, Span, ToSpan},
+    text::{Line, Span},
     widgets::Widget,
 };
 
-use crate::{Action, Component, Context, Item, StateAction, keyhints::KeyHints, state_action};
+use crate::{
+    Component, Context, Item, StateAction,
+    action::{Action, state_action},
+    keyhints::KeyHints,
+};
 
 use super::{DEFAULT_WIDTH, PromptTrait};
 
@@ -18,12 +24,13 @@ pub struct DeleteConfirmation {
 }
 
 impl PromptTrait for DeleteConfirmation {
-    fn height(&self) -> u16 {
+    fn height(&self, _context: Context) -> u16 {
         1
     }
 
-    fn title(&self, item: Item) -> String {
-        format!("Delete {item}")
+    fn title(&self, item: Item) -> Cow<'static, str> {
+        let item: &str = item.into();
+        format!("Delete {item}").into()
     }
 
     fn width(&self) -> u16 {
@@ -43,15 +50,16 @@ impl Component for DeleteConfirmation {
         vec![("Y/y/Enter", "Confirm")]
     }
 
-    fn render(&self, area: Rect, buf: &mut Buffer, context: Context) {
-        Line::from_iter([
-            "Are you sure to delete ".to_span(),
-            self.item.to_string().to_span(),
-            " ".to_span(),
+    fn render(&self, area: Rect, buf: &mut Buffer, context: Context, _focused: bool) {
+        let item_type: &str = self.item.into();
+        let spans = [
+            "Are you sure to delete ".into(),
+            item_type.into(),
+            " ".into(),
             Span::styled(&self.name, Style::new().fg(context.config.app_color)),
-            "?".to_span(),
-        ])
-        .centered()
-        .render(area, buf);
+            "?".into(),
+        ];
+
+        Line::from_iter(spans).centered().render(area, buf);
     }
 }

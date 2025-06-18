@@ -1,65 +1,52 @@
-use ratatui::{
-    buffer::{Buffer, Cell},
-    layout::{Constraint, Layout, Rect},
-    style::Style,
-};
-use tap::Tap;
+mod component;
+
+use kraban_config::Tab;
+use kraban_lib::wrapping_usize::WrappingUsize;
 
 use crate::Context;
 
-use super::TasksView;
+use super::column::ColumnView;
 
-impl TasksView {
-    pub(super) fn render_tab(&self, area: Rect, buf: &mut Buffer, context: Context, tab: usize) {
-        let column_constraints = vec![Constraint::Min(0); context.config.tabs[tab].columns.len()];
-        let columns_len = column_constraints.len();
-        Layout::horizontal(column_constraints)
-            .split(area)
-            .iter()
-            .enumerate()
-            .for_each(|(column, area)| {
-                self.render_column_at(buf, *area, context, column, tab, columns_len)
-            })
-    }
-
-    fn render_column_at(
-        &self,
-        buf: &mut Buffer,
-        area: Rect,
-        context: Context,
-        index: usize,
-        tab: usize,
-        total_columns: usize,
-    ) {
-        let area = if index < total_columns - 1 {
-            render_separator(area, buf, context);
-            Rect {
-                width: area.width - 1,
-                ..area
-            }
-        } else {
-            area
-        };
-
-        self.render_column(area, buf, context, tab, index);
-    }
+#[derive(Debug, Clone)]
+pub struct TabView {
+    tab_index: usize,
+    columns: Vec<ColumnView>,
+    focused: WrappingUsize,
 }
 
-fn render_separator(area: Rect, buf: &mut Buffer, context: Context) {
-    let separator_buf_area = Rect {
-        width: 1,
-        x: area.x + area.width - 1,
-        ..area
-    };
-    let separator_buffer = Buffer::filled(
-        separator_buf_area,
-        Cell::new(ratatui::symbols::line::VERTICAL),
-    )
-    .tap_mut(|buf| {
-        buf.set_style(
-            separator_buf_area,
-            Style::new().fg(context.config.app_color),
-        )
-    });
-    buf.merge(&separator_buffer);
+impl TabView {
+    pub fn new(project: usize, tab_index: usize, tab: &Tab) -> Self {
+        Self::with_column_and_task(project, tab_index, tab, 0, 0)
+    }
+
+    pub fn set_task_index(&mut self, index: usize) {
+        self.columns[self.focused.value()].set_index(index);
+    }
+
+    pub fn with_column_and_task(
+        project: usize,
+        tab_index: usize,
+        tab: &Tab,
+        column: usize,
+        task: usize,
+    ) -> Self {
+        Self {
+            tab_index,
+            columns: tab
+                .columns
+                .iter()
+                .map(|column| ColumnView::new(project, column, task))
+                .collect(),
+            focused: WrappingUsize::with_value(column, tab.columns.len() - 1),
+        }
+    }
+
+    pub fn update_column_max_index(&mut self, context: Context) {
+        self.columns[self.focused.value()].update_max_index(context);
+    }
+
+    pub fn get_column_and_task_index(&self) -> (&str, Option<usize>) {
+        let column = self.focused.value();
+        self.columns[column].selected()
+    }
 }

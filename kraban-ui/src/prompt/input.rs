@@ -1,3 +1,5 @@
+use std::{borrow::Cow, mem};
+
 use crossterm::event::{KeyCode, KeyEvent};
 use ratatui::{
     buffer::Buffer,
@@ -5,10 +7,14 @@ use ratatui::{
     style::{Style, Stylize},
     widgets::Widget,
 };
-use tap::Tap;
+use tap::{Pipe, Tap};
 use tui_textarea::{CursorMove, TextArea};
 
-use crate::{Action, Component, Context, Item, StateAction, keyhints::KeyHints, state_action};
+use crate::{
+    Component, Context, Item, StateAction,
+    action::{Action, state_action},
+    keyhints::KeyHints,
+};
 
 use super::{DEFAULT_WIDTH, PromptTrait};
 
@@ -36,24 +42,30 @@ impl InputPrompt {
             t.set_selection_style(Style::new().fg(context.config.app_color).reversed());
             t.set_cursor_line_style(Style::new());
         });
+
         Self {
             text_area,
             input_action,
         }
     }
 
-    fn current_line(&self) -> &String {
-        self.text_area.lines().first().unwrap()
+    fn current_line_owned(&mut self) -> String {
+        mem::take(&mut self.text_area)
+            .into_lines()
+            .into_iter()
+            .next()
+            .unwrap()
     }
 }
 
 impl PromptTrait for InputPrompt {
-    fn height(&self) -> u16 {
+    fn height(&self, _context: Context) -> u16 {
         1
     }
 
-    fn title(&self, item: Item) -> String {
-        format!("{} {item}", self.input_action)
+    fn title(&self, item: Item) -> Cow<'static, str> {
+        let item: &str = item.into();
+        format!("{} {item}", self.input_action).into()
     }
 
     fn width(&self) -> u16 {
@@ -64,12 +76,11 @@ impl PromptTrait for InputPrompt {
 impl Component for InputPrompt {
     fn on_key(&mut self, key_event: KeyEvent, _context: Context) -> Option<Action> {
         match key_event.code {
-            KeyCode::Enter if self.current_line() != &String::new() => {
-                state_action(match self.input_action {
-                    InputAction::Rename => StateAction::Rename(self.current_line().clone()),
-                    InputAction::New => StateAction::New(self.current_line().clone()),
-                })
+            KeyCode::Enter if !self.text_area.is_empty() => match self.input_action {
+                InputAction::Rename => StateAction::Rename(self.current_line_owned()),
+                InputAction::New => StateAction::New(self.current_line_owned()),
             }
+            .pipe(state_action),
             KeyCode::Enter => None,
             _ => {
                 self.text_area.input(key_event);
@@ -82,7 +93,7 @@ impl Component for InputPrompt {
         vec![("Enter", "Submit"), ("Other", "Consult readme")]
     }
 
-    fn render(&self, area: Rect, buf: &mut Buffer, _context: Context) {
+    fn render(&self, area: Rect, buf: &mut Buffer, _context: Context, _focused: bool) {
         self.text_area.render(area, buf)
     }
 }

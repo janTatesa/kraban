@@ -10,28 +10,67 @@ use ratatui::style::Color;
 use serde::Deserialize;
 use tap::Tap;
 
-use kraban_lib::{Dir, get_dir};
+use kraban_lib::dir::{Dir, get_dir};
 
+#[derive(Debug)]
 pub struct Config {
     pub tabs: Vec<Tab>,
     pub columns: Vec<Column>,
     pub app_color: Color,
     pub collapse_unfocused_tabs: bool,
     pub show_key_hints: bool,
-    pub always_open_priority_prompt: bool,
+    pub always_open: AlwaysOpen,
     pub default_due_dates: DefaultDueDates,
 }
 
-const DEFAULT_CONFIG: &str = include_str!("./default-config.toml");
-pub fn print_default_config() {
-    println!("{DEFAULT_CONFIG}");
+#[derive(Default, Debug)]
+pub struct Tab {
+    pub columns: Vec<Column>,
 }
 
-pub fn write_default_config(is_testing: bool) -> Result<()> {
-    let dir = get_dir(Dir::Config, is_testing)?.tap_mut(|p| p.push("kraban.toml"));
-    fs::write(&dir, DEFAULT_CONFIG)?;
-    println!("Wrote default config to {}", dir.display().green());
-    Ok(())
+#[derive(Clone, Debug)]
+pub struct Column {
+    pub name: String,
+    pub color: Color,
+    pub done_column: bool,
+}
+
+#[derive(Deserialize, Debug)]
+#[serde(deny_unknown_fields)]
+pub struct DefaultDueDates {
+    pub enable: bool,
+    pub high: u16,
+    pub medium: u16,
+    pub low: u16,
+}
+
+#[derive(Deserialize, Clone, Copy, Debug)]
+pub struct AlwaysOpen {
+    pub priority: bool,
+    pub difficulty: bool,
+    pub due_date: bool,
+}
+
+#[derive(Deserialize, Clone)]
+#[serde(deny_unknown_fields)]
+struct ColumnRaw {
+    name: String,
+    color: Color,
+    tab: usize,
+    #[serde(default)]
+    done_column: bool,
+}
+
+#[derive(Deserialize)]
+#[serde(deny_unknown_fields)]
+struct ConfigRaw {
+    #[serde(alias = "column")]
+    columns: Vec<ColumnRaw>,
+    app_color: Color,
+    collapse_unfocused_tabs: bool,
+    show_key_hints: bool,
+    always_open: AlwaysOpen,
+    default_due_dates: DefaultDueDates,
 }
 
 impl Config {
@@ -39,7 +78,7 @@ impl Config {
         let path = get_dir(Dir::Config, is_testing)?.tap_mut(|p| p.push("kraban.toml"));
 
         let raw: ConfigRaw = Figment::new()
-            .merge(Data::<Toml>::string(DEFAULT_CONFIG))
+            .merge(Data::<Toml>::string(Self::DEFAULT))
             .merge(Data::<Toml>::file(path))
             .extract()?;
         let ConfigRaw {
@@ -47,8 +86,8 @@ impl Config {
             app_color,
             collapse_unfocused_tabs,
             show_key_hints,
-            always_open_priority_prompt,
             default_due_dates,
+            always_open,
         } = raw;
 
         let columns = columns.into_iter().map(|column| {
@@ -77,48 +116,20 @@ impl Config {
             columns,
             collapse_unfocused_tabs,
             show_key_hints,
-            always_open_priority_prompt,
+            always_open,
             default_due_dates,
         })
     }
-}
 
-#[derive(Default)]
-pub struct Tab {
-    pub columns: Vec<Column>,
-}
+    const DEFAULT: &str = include_str!("./default-config.toml");
+    pub fn print_default() {
+        println!("{}", Self::DEFAULT);
+    }
 
-#[derive(Clone)]
-pub struct Column {
-    pub name: String,
-    pub color: Color,
-    pub done_column: bool,
-}
-
-#[derive(Deserialize, Clone)]
-struct ColumnRaw {
-    name: String,
-    color: Color,
-    tab: usize,
-    #[serde(default)]
-    done_column: bool,
-}
-
-#[derive(Deserialize)]
-struct ConfigRaw {
-    #[serde(alias = "column")]
-    columns: Vec<ColumnRaw>,
-    app_color: Color,
-    collapse_unfocused_tabs: bool,
-    show_key_hints: bool,
-    always_open_priority_prompt: bool,
-    default_due_dates: DefaultDueDates,
-}
-
-#[derive(Deserialize)]
-pub struct DefaultDueDates {
-    pub enable: bool,
-    pub high: u16,
-    pub medium: u16,
-    pub low: u16,
+    pub fn write_default(is_testing: bool) -> Result<()> {
+        let dir = get_dir(Dir::Config, is_testing)?.tap_mut(|p| p.push("kraban.toml"));
+        fs::write(&dir, Self::DEFAULT)?;
+        println!("Wrote default config to {}", dir.display().green());
+        Ok(())
+    }
 }

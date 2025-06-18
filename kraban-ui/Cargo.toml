@@ -24,3 +24,6 @@ strum_macros.workspace = true
 strum.workspace = true
 chrono.workspace = true
 time.workspace = true
+itertools.workspace = true
+arrayvec.workspace = true
+derivative.workspace = true

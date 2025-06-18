@@ -23,3 +23,6 @@ strum.workspace = true
 time.workspace = true
 chrono.workspace = true
 ratatui.workspace = true
+itertools.workspace = true
+serde_with.workspace = true
+hashbrown.workspace = true
