@@ -46,7 +46,6 @@ impl Ui {
             Action::SwitchToView(view) => self.view = view,
             Action::OpenPrompt(prompt) => self.prompt_stack.push(prompt),
             Action::State(action) => {
-                self.prompt_stack.pop();
                 if let StateAction::New(_) = action {
                     let always_open = context.config.always_open;
                     let in_task_view = self.view.item() == Item::Task;

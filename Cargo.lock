@@ -423,12 +423,12 @@ checksum = "877a4ace8713b0bcf2a4e7eec82529c029f1d0619886d18145fea96c3ffe5c0f"
 
 [[package]]
 name = "errno"
-version = "0.3.12"
+version = "0.3.13"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "cea14ef9355e3beab063703aa9dab15afd25f0667c341310c1e5274bb1d0da18"
+checksum = "778e2ac28f6c47af28e4907f13ffd1e1ddbd400980a9abd7c8df189bf578a5ad"
 dependencies = [
  "libc",
- "windows-sys 0.59.0",
+ "windows-sys 0.60.2",
 ]
 
 [[package]]
@@ -638,7 +638,7 @@ dependencies = [
 
 [[package]]
 name = "kraban"
-version = "0.5.0"
+version = "0.5.1"
 dependencies = [
  "clap",
  "cli-log",
@@ -652,7 +652,7 @@ dependencies = [
 
 [[package]]
 name = "kraban-config"
-version = "0.5.0"
+version = "0.5.1"
 dependencies = [
  "color-eyre",
  "figment",
@@ -664,7 +664,7 @@ dependencies = [
 
 [[package]]
 name = "kraban-lib"
-version = "0.5.0"
+version = "0.5.1"
 dependencies = [
  "chrono",
  "color-eyre",
@@ -677,7 +677,7 @@ dependencies = [
 
 [[package]]
 name = "kraban-state"
-version = "0.5.0"
+version = "0.5.1"
 dependencies = [
  "chrono",
  "cli-log",
@@ -699,7 +699,7 @@ dependencies = [
 
 [[package]]
 name = "kraban-ui"
-version = "0.5.0"
+version = "0.5.1"
 dependencies = [
  "arrayvec",
  "chrono",
