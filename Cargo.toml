@@ -44,5 +44,5 @@ derivative = "2.2"
 figment = { version = "0.10", features = ["toml"] }
 itertools = "0.14"
 arrayvec = "0.7"
-serde_with = "3.12"
+serde_with = "3.14"
 hashbrown = { version = "0.15", features = ["serde"] }
