@@ -1,19 +1,24 @@
 use std::fmt::Debug;
 
-use crossterm::event::{KeyCode, KeyEvent, KeyModifiers};
 use enum_dispatch::enum_dispatch;
 use keyhints::KeyHints;
+use ratatui::crossterm::event::{KeyCode, KeyEvent, KeyModifiers};
 use ratatui::{
     buffer::Buffer,
     layout::{Constraint, Layout, Rect},
     style::{Style, Stylize},
     text::{Line, Text},
-    widgets::Widget,
+    widgets::{Clear, Widget},
 };
 use tap::Tap;
 use widgets::main_block;
 
-use crate::{Context, ViewTrait, action::Action};
+use crate::{
+    Context, ViewTrait,
+    action::Action,
+    prompt::{PromptTrait, center_area},
+    widgets::block_widget,
+};
 
 use super::{
     Ui,
@@ -22,15 +27,15 @@ use super::{
 };
 
 #[enum_dispatch]
-pub(crate) trait Component: Debug {
-    fn on_key(&mut self, key_event: KeyEvent, context: Context) -> Option<Action>;
+pub(crate) trait Component<'a>: Debug {
+    fn on_key(&mut self, key_event: KeyEvent, context: Context<'_, 'a>) -> Option<Action<'a>>;
     fn key_hints(&self, context: Context) -> KeyHints;
-    fn render(&self, area: Rect, buf: &mut Buffer, context: Context, focused: bool);
+    fn render(&mut self, area: Rect, buf: &mut Buffer, context: Context, focused: bool);
 }
 
-impl Component for Ui {
-    fn on_key(&mut self, key_event: KeyEvent, context: Context) -> Option<Action> {
-        match (key_event, &mut self.prompt_stack.last_mut()) {
+impl<'a> Component<'a> for Ui<'a> {
+    fn on_key(&mut self, key_event: KeyEvent, context: Context<'_, 'a>) -> Option<Action<'a>> {
+        match (key_event, self.prompt_stack.last_mut()) {
             (
                 KeyEvent {
                     code: KeyCode::Esc,
@@ -53,7 +58,7 @@ impl Component for Ui {
         }
     }
 
-    fn render(&self, terminal_area: Rect, buf: &mut Buffer, context: Context, _focused: bool) {
+    fn render(&mut self, terminal_area: Rect, buf: &mut Buffer, context: Context, _focused: bool) {
         let key_hints = context
             .config
             .show_key_hints
@@ -83,14 +88,25 @@ impl Component for Ui {
 
         self.view
             .render(main_app_area, buf, context, self.prompt_stack.is_empty());
-        if let Some(prompt) = &self.prompt_stack.last() {
+        if let Some(prompt) = self.prompt_stack.last_mut() {
             buf.set_style(main_app_area, Style::default().dim());
-            self.render_prompt(main_app_area, buf, prompt, context);
+            let prompt_area = center_area(
+                main_app_area,
+                Constraint::Length(prompt.width() + 2),
+                Constraint::Length(prompt.height(context) + 2),
+            );
+
+            Clear.render(prompt_area, buf);
+            let block = block_widget(context.config)
+                .title(Line::from(prompt.title(self.view.current_item())).centered());
+            let inner_prompt_area = block.inner(prompt_area);
+            block.render(prompt_area, buf);
+            prompt.render(inner_prompt_area, buf, context, true);
         }
     }
 }
 
-impl Ui {
+impl Ui<'_> {
     fn key_hints_widget(&self, context: Context, width: u16) -> Text<'static> {
         let key_hints = self
             .key_hints(context)

@@ -1,5 +1,5 @@
-use crossterm::event::{KeyCode, KeyEvent};
 use kraban_state::DueTask;
+use ratatui::crossterm::event::{KeyCode, KeyEvent};
 use ratatui::{
     layout::Constraint,
     style::{Color, Stylize},
@@ -18,9 +18,14 @@ use crate::{
 };
 
 #[derive(Debug, Clone, Copy, Default)]
-pub struct DueTaskList;
-impl TableQuery<6> for DueTaskList {
-    fn on_key(&self, index: Option<usize>, key: KeyEvent, context: Context) -> Option<Action> {
+pub struct DueTaskTable;
+impl TableQuery<'_, 6> for DueTaskTable {
+    fn on_key<'a>(
+        &self,
+        index: Option<usize>,
+        key: KeyEvent,
+        context: Context<'_, 'a>,
+    ) -> Option<Action<'a>> {
         let due_task = get!(context, due_tasks, index?);
         match key.keycode_without_modifiers()? {
             KeyCode::Enter => switch_to_task(context, due_task),
@@ -51,7 +56,7 @@ impl TableQuery<6> for DueTaskList {
         ]
     }
 
-    fn rows<'a>(&self, context: Context<'a>) -> impl Iterator<Item = [Line<'a>; 6]> {
+    fn rows<'a>(&self, context: Context<'a, 'a>) -> impl Iterator<Item = [Line<'a>; 6]> {
         get!(context, due_tasks).iter().map(|task| {
             [
                 task.task
@@ -74,7 +79,7 @@ impl TableQuery<6> for DueTaskList {
     }
 }
 
-fn switch_to_task(context: Context<'_>, due_task: &DueTask) -> Option<Action> {
+fn switch_to_task<'a>(context: Context<'_, 'a>, due_task: &DueTask) -> Option<Action<'a>> {
     TasksView::with_specific_task(
         due_task.project_index,
         &due_task.column_name,

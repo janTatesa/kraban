@@ -1,4 +1,4 @@
-use crossterm::event::{KeyCode, KeyEvent, KeyModifiers};
+use ratatui::crossterm::event::{KeyCode, KeyEvent, KeyModifiers};
 use ratatui::{
     buffer::{Buffer, Cell},
     layout::{Constraint, Layout, Rect},
@@ -17,7 +17,7 @@ fn render_column_at(
     area: Rect,
     context: Context,
     should_render_separator: bool,
-    column_view: &ColumnView,
+    column_view: &mut ColumnView,
     focused: bool,
 ) {
     let area = area.tap_mut(|area| {
@@ -30,14 +30,14 @@ fn render_column_at(
     column_view.render(area, buf, context, focused);
 }
 
-impl Component for TabView {
-    fn render(&self, area: Rect, buf: &mut Buffer, context: Context, focused: bool) {
+impl<'a> Component<'a> for TabView<'a> {
+    fn render(&mut self, area: Rect, buf: &mut Buffer, context: Context, focused: bool) {
         let columns_len = get!(context, tabs, self.tab_index).len();
         let column_constraints = vec![Constraint::Min(0); columns_len];
         Layout::horizontal(column_constraints)
             .split(area)
             .iter()
-            .zip(&self.columns)
+            .zip(&mut self.columns)
             .enumerate()
             .for_each(|(index, (area, column_view))| {
                 render_column_at(
@@ -51,11 +51,11 @@ impl Component for TabView {
             })
     }
 
-    fn on_key(&mut self, key_event: KeyEvent, context: Context) -> Option<Action> {
+    fn on_key(&mut self, key_event: KeyEvent, context: Context<'_, 'a>) -> Option<Action<'a>> {
         let column_view = &mut self.columns[self.focused.value()];
         match (key_event.code, key_event.modifiers) {
-            (KeyCode::Left, KeyModifiers::NONE) => self.focused = self.focused.decrement(),
-            (KeyCode::Right, KeyModifiers::NONE) => self.focused = self.focused.increment(),
+            (KeyCode::Left, KeyModifiers::NONE) => self.focused.decrement(),
+            (KeyCode::Right, KeyModifiers::NONE) => self.focused.increment(),
             _ => return column_view.on_key(key_event, context),
         }
         None

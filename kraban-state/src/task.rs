@@ -1,15 +1,15 @@
+use core::panic;
 use std::cmp::Ordering;
 
-use crate::{Action, ReversedSortedVec, SwitchToIndex};
+use crate::{Action, ItemToCreate, ReversedSortedVec};
 
 use super::{Difficulty, Priority, State};
 use chrono::{Days, Local};
 use derivative::Derivative;
 use kraban_config::Config;
-use kraban_lib::date::chrono_date_to_time_date;
+use kraban_lib::{date::chrono_date_to_time_date, unwrap_or_ret};
 use serde::{Deserialize, Serialize};
 use serde_with::skip_serializing_none;
-use tap::Pipe;
 use time::Date;
 
 #[derive(Serialize, Deserialize, Default, PartialEq, Eq, Derivative, Clone, Debug)]
@@ -66,48 +66,43 @@ impl State {
         column: &str,
         index: Option<usize>,
         config: &Config,
-    ) -> Option<SwitchToIndex> {
+    ) {
         let list = self.projects[project].columns.get_mut(column);
         match action {
-            Action::Delete => _ = list.remove(index?),
-            Action::ChangePriority(priority) => change_priority(index?, config, list, priority),
-            Action::ChangeDifficulty(difficulty) => change_difficulty(index?, list, difficulty),
-            Action::New(title) => return new_task(list, title),
-            Action::Rename(title) => rename(index?, list, title),
+            Action::Delete => _ = list.remove(unwrap_or_ret!(index)),
+            Action::ChangePriority(priority) => change_priority(index, config, list, priority),
+            Action::ChangeDifficulty(difficulty) => change_difficulty(index, list, difficulty),
+            Action::New(ItemToCreate::Task(task)) => _ = list.push(task),
+            Action::New(_) => panic!("Cannot create project when in task view"),
+            Action::Rename(title) => rename(index, list, title),
             Action::MoveToColumn(column) => {
-                let task = list.remove(index?);
-                self.projects[project].columns.get_mut(&column).push(task);
+                let task = list.remove(unwrap_or_ret!(index));
+                self.projects[project].columns.get_mut(column).push(task);
             }
-            Action::SetTaskDueDate(due_date) => change_due_date(index?, list, due_date),
+            Action::SetTaskDueDate(due_date) => change_due_date(index, list, due_date),
         }
-        None
     }
 }
 
-fn change_due_date(index: usize, list: &mut ReversedSortedVec<Task>, due_date: Option<Date>) {
-    list.map_item_at(index, |task| Task {
+fn change_due_date(
+    index: Option<usize>,
+    list: &mut ReversedSortedVec<Task>,
+    due_date: Option<Date>,
+) {
+    list.map_item_at(unwrap_or_ret!(index), |task| Task {
         due_date,
         due_date_manually_set: true,
         ..task
     });
 }
 
-fn new_task(list: &mut ReversedSortedVec<Task>, title: String) -> Option<SwitchToIndex> {
-    list.push(Task {
-        title,
-        ..Task::default()
-    })
-    .pipe(SwitchToIndex)
-    .pipe(Some)
-}
-
 fn change_priority(
-    index: usize,
+    index: Option<usize>,
     config: &Config,
     list: &mut ReversedSortedVec<Task>,
     priority: Option<Priority>,
 ) {
-    list.map_item_at(index, |task| Task {
+    list.map_item_at(unwrap_or_ret!(index), |task| Task {
         priority,
         due_date: task.due_date_by_priority(priority, config),
         ..task
@@ -115,13 +110,13 @@ fn change_priority(
 }
 
 fn change_difficulty(
-    index: usize,
+    index: Option<usize>,
     list: &mut ReversedSortedVec<Task>,
     difficulty: Option<Difficulty>,
 ) {
-    list.map_item_at(index, |task| Task { difficulty, ..task });
+    list.map_item_at(unwrap_or_ret!(index), |task| Task { difficulty, ..task });
 }
 
-fn rename(index: usize, list: &mut ReversedSortedVec<Task>, title: String) {
-    list.map_item_at(index, |task| Task { title, ..task });
+fn rename(index: Option<usize>, list: &mut ReversedSortedVec<Task>, title: String) {
+    list.map_item_at(unwrap_or_ret!(index), |task| Task { title, ..task });
 }

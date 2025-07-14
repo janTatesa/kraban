@@ -1,4 +1,4 @@
-use crossterm::event::{KeyCode, KeyEvent};
+use ratatui::crossterm::event::{KeyCode, KeyEvent};
 use ratatui::{
     buffer::Buffer,
     layout::{Constraint, Layout, Rect},
@@ -11,8 +11,8 @@ use crate::{
     Component, Context, KeyNoModifiers, action::Action, keyhints::KeyHints, widgets::block_widget,
 };
 
-impl Component for MainView {
-    fn on_key(&mut self, key_event: KeyEvent, context: Context) -> Option<Action> {
+impl<'a> Component<'a> for MainView {
+    fn on_key(&mut self, key_event: KeyEvent, context: Context<'_, 'a>) -> Option<Action<'a>> {
         if let Some(KeyCode::Tab) = key_event.keycode_without_modifiers() {
             self.focused_list = match self.focused_list {
                 FocusedList::Projects => FocusedList::DueTasks,
@@ -36,7 +36,7 @@ impl Component for MainView {
         .tap_mut(|v| v.push(("Tab", "Switch between lists")))
     }
 
-    fn render(&self, area: Rect, buf: &mut Buffer, context: Context, focused: bool) {
+    fn render(&mut self, area: Rect, buf: &mut Buffer, context: Context, focused: bool) {
         let layout = Layout::horizontal([Constraint::Percentage(40), Constraint::Percentage(60)])
             .split(area);
         let separator_block = block_widget(context.config).borders(Borders::RIGHT);

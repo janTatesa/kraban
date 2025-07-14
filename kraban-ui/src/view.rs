@@ -1,8 +1,8 @@
 use std::borrow::Cow;
 
-use crossterm::event::KeyEvent;
 use enum_dispatch::enum_dispatch;
-use kraban_state::CurrentList;
+use kraban_state::CurrentItem;
+use ratatui::crossterm::event::KeyEvent;
 use ratatui::{buffer::Buffer, layout::Rect};
 
 use crate::{
@@ -11,24 +11,20 @@ use crate::{
 
 #[enum_dispatch]
 pub(crate) trait ViewTrait {
-    fn item(&self) -> Item;
     fn title(&self, context: Context) -> Cow<'static, str>;
     fn right_title(&self) -> Option<&'static str>;
-    fn current_list(&self) -> CurrentList;
-    fn refresh_max_indexes(&mut self, context: Context);
-    fn switch_to_index(&mut self, index: usize);
-}
-
-#[derive(strum_macros::IntoStaticStr, Debug, Clone, Copy, PartialEq, Eq)]
-#[strum(serialize_all = "lowercase")]
-pub(crate) enum Item {
-    Project,
-    Task,
+    fn current_item(&self) -> CurrentItem;
 }
 
 #[enum_dispatch(ViewTrait, Component)]
 #[derive(Debug)]
-pub enum View {
+pub enum View<'a> {
     MainView,
-    TasksView,
+    TasksView(TasksView<'a>),
+}
+
+impl Default for View<'_> {
+    fn default() -> Self {
+        Self::MainView(MainView::with_focused_project(0))
+    }
 }

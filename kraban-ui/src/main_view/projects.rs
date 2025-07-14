@@ -1,6 +1,7 @@
-use crossterm::event::{KeyCode, KeyEvent};
 use itertools::Itertools;
 use kraban_lib::iter::IterExt;
+use kraban_state::CurrentItem;
+use ratatui::crossterm::event::{KeyCode, KeyEvent};
 use ratatui::{
     layout::Constraint,
     style::Stylize,
@@ -9,7 +10,7 @@ use ratatui::{
 use tap::Pipe;
 
 use crate::{
-    Context, Item, KeyNoModifiers,
+    Context, KeyNoModifiers,
     action::{Action, open_prompt, switch_to_view},
     get,
     keyhints::KeyHints,
@@ -22,18 +23,18 @@ use crate::{
 #[derive(Clone, Copy, Debug, Default)]
 pub struct ProjectsTable;
 
-impl TableQuery<3> for ProjectsTable {
-    fn on_key(
+impl TableQuery<'_, 3> for ProjectsTable {
+    fn on_key<'a>(
         &self,
         index: Option<usize>,
         key_event: KeyEvent,
-        context: Context,
-    ) -> Option<Action> {
+        context: Context<'_, 'a>,
+    ) -> Option<Action<'a>> {
         match key_event.keycode_without_modifiers()? {
-            KeyCode::Delete | KeyCode::Backspace => open_prompt(DeleteConfirmation {
-                name: get!(context, projects, index?).title.clone(),
-                item: Item::Project,
-            }),
+            KeyCode::Delete | KeyCode::Backspace => index
+                .pipe(CurrentItem::Project)
+                .pipe(DeleteConfirmation)
+                .pipe(open_prompt),
             KeyCode::Char('n') => open_prompt(InputPrompt::new(
                 context,
                 InputAction::New,
@@ -55,7 +56,7 @@ impl TableQuery<3> for ProjectsTable {
     }
 
     #[allow(unstable_name_collisions)]
-    fn rows<'a>(&self, context: Context<'a>) -> impl Iterator<Item = [Line<'a>; 3]> {
+    fn rows<'a>(&self, context: Context<'a, 'a>) -> impl Iterator<Item = [Line<'a>; 3]> {
         get!(context, projects).iter().map(move |project| {
             [
                 project.priority.map(Line::from).unwrap_or(no_property()),

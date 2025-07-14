@@ -41,7 +41,7 @@ impl From<Priority> for Color {
     }
 }
 
-impl From<Option<Priority>> for Action {
+impl From<Option<Priority>> for Action<'_> {
     fn from(value: Option<Priority>) -> Self {
         Self::ChangePriority(value)
     }

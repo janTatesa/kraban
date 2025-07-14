@@ -1,6 +1,6 @@
 use std::iter;
 
-use crossterm::event::{KeyCode, KeyEvent};
+use ratatui::crossterm::event::{KeyCode, KeyEvent};
 use ratatui::{style::Stylize, text::Line};
 use tap::Pipe;
 
@@ -35,13 +35,18 @@ fn enum_variant_to_line<'a, T: EnumPromptMember>(variant: Option<T>) -> Line<'a>
 
 impl<T: EnumPromptMember> ListQuery for EnumPromptQuery<T>
 where
-    StateAction: From<Option<T>>,
+    StateAction<'static>: From<Option<T>>,
 {
-    fn get_items<'a>(&self, _context: Context<'a>) -> impl Iterator<Item = Line<'a>> {
+    fn get_items<'a>(&self, _context: Context<'a, 'a>) -> impl Iterator<Item = Line<'a>> {
         self.variants().map(enum_variant_to_line)
     }
 
-    fn on_key(&self, index: usize, key_event: KeyEvent, _context: Context) -> Option<Action> {
+    fn on_key(
+        &self,
+        index: usize,
+        key_event: KeyEvent,
+        _context: Context,
+    ) -> Option<Action<'static>> {
         match key_event.keycode_without_modifiers()? {
             KeyCode::Enter => state_action(self.variants().nth(index)?.into()),
             KeyCode::Char(char) => self

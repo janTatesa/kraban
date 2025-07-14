@@ -1,6 +1,6 @@
 use std::fmt::Display;
 
-use crossterm::event::KeyEvent;
+use ratatui::crossterm::event::KeyEvent;
 
 use ratatui::{
     buffer::Buffer,
@@ -21,12 +21,12 @@ fn optional_text(display: impl Display, condition: bool) -> String {
     }
 }
 
-impl Component for ColumnView {
-    fn render(&self, area: Rect, buf: &mut Buffer, context: Context, focused: bool) {
-        let column_len = self.list.query().len(context);
+impl<'a> Component<'a> for ColumnView<'a> {
+    fn render(&mut self, area: Rect, buf: &mut Buffer, context: Context, focused: bool) {
+        let column_len = self.table.query().len(context);
         let block_name = format!(
             "{}{}{}",
-            self.list.query().column,
+            self.table.query().column,
             optional_text(column_len, area.height <= column_len as u16,),
             optional_text("immutable", self.immutable)
         );
@@ -47,14 +47,14 @@ impl Component for ColumnView {
             ..area
         };
 
-        self.list.render(area, buf, context, focused);
+        self.table.render(area, buf, context, focused);
     }
 
-    fn on_key(&mut self, key_event: KeyEvent, context: Context) -> Option<Action> {
-        self.list.on_key(key_event, context)
+    fn on_key(&mut self, key_event: KeyEvent, context: Context<'_, 'a>) -> Option<Action<'a>> {
+        self.table.on_key(key_event, context)
     }
 
     fn key_hints(&self, context: Context) -> KeyHints {
-        self.list.key_hints(context)
+        self.table.key_hints(context)
     }
 }

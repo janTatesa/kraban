@@ -1,33 +1,26 @@
 mod component;
 
-use kraban_config::Tab;
+use super::column::ColumnView;
+use kraban_config::TabConfig;
 use kraban_lib::wrapping_usize::WrappingUsize;
 
-use crate::Context;
-
-use super::column::ColumnView;
-
 #[derive(Debug, Clone)]
-pub struct TabView {
+pub struct TabView<'a> {
     tab_index: usize,
-    columns: Vec<ColumnView>,
+    columns: Vec<ColumnView<'a>>,
     focused: WrappingUsize,
 }
 
-impl TabView {
-    pub fn new(project: usize, tab_index: usize, tab: &Tab) -> Self {
+impl<'a> TabView<'a> {
+    pub fn new(project: usize, tab_index: usize, tab: &'a TabConfig) -> Self {
         Self::with_column_and_task(project, tab_index, tab, 0, 0)
-    }
-
-    pub fn set_task_index(&mut self, index: usize) {
-        self.columns[self.focused.value()].set_index(index);
     }
 
     pub fn with_column_and_task(
         project: usize,
         tab_index: usize,
-        tab: &Tab,
-        column: usize,
+        tab: &'a TabConfig,
+        column_index: usize,
         task: usize,
     ) -> Self {
         Self {
@@ -37,12 +30,8 @@ impl TabView {
                 .iter()
                 .map(|column| ColumnView::new(project, column, task))
                 .collect(),
-            focused: WrappingUsize::with_value(column, tab.columns.len() - 1),
+            focused: WrappingUsize::new_with_value(tab.columns.len() - 1, column_index),
         }
-    }
-
-    pub fn update_column_max_index(&mut self, context: Context) {
-        self.columns[self.focused.value()].update_max_index(context);
     }
 
     pub fn get_column_and_task_index(&self) -> (&str, Option<usize>) {

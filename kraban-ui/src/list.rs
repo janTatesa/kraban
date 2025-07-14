@@ -1,5 +1,4 @@
-use crossterm::event::{KeyCode, KeyEvent, KeyModifiers};
-use kraban_lib::wrapping_usize::WrappingUsize;
+use ratatui::crossterm::event::{KeyCode, KeyEvent, KeyModifiers};
 use ratatui::{
     buffer::Buffer,
     layout::Rect,
@@ -16,19 +15,24 @@ use crate::{Context, action::Action};
 use super::{Component, keyhints::KeyHints};
 
 pub trait ListQuery: Debug {
-    fn get_items<'a>(&self, context: Context<'a>) -> impl Iterator<Item = Line<'a>>;
-    fn on_key(&self, index: usize, key_event: KeyEvent, context: Context) -> Option<Action>;
+    fn get_items<'a>(&self, context: Context<'a, 'a>) -> impl Iterator<Item = Line<'a>>;
+    fn on_key<'a>(
+        &self,
+        index: usize,
+        key_event: KeyEvent,
+        context: Context<'_, 'a>,
+    ) -> Option<Action<'a>>;
     fn keyhints(&self, context: Context) -> KeyHints;
 }
 
-impl<Q: ListQuery> Component for List<Q> {
-    fn on_key(&mut self, key_event: KeyEvent, context: Context) -> Option<Action> {
+impl<'a, Q: ListQuery> Component<'a> for List<Q> {
+    fn on_key(&mut self, key_event: KeyEvent, context: Context<'_, 'a>) -> Option<Action<'a>> {
         let selected = &mut self.selected;
         match (key_event.code, key_event.modifiers) {
-            (KeyCode::Down, KeyModifiers::NONE) => *selected = selected.increment(),
-            (KeyCode::Up, KeyModifiers::NONE) => *selected = selected.decrement(),
-            (KeyCode::Home, KeyModifiers::NONE) => *selected = selected.set_value(0),
-            (KeyCode::End, KeyModifiers::NONE) => *selected = selected.set_value(0).decrement(),
+            (KeyCode::Down, KeyModifiers::NONE) => selected.select_next(),
+            (KeyCode::Up, KeyModifiers::NONE) => selected.select_previous(),
+            (KeyCode::Home, KeyModifiers::NONE) => selected.select_first(),
+            (KeyCode::End, KeyModifiers::NONE) => selected.select_last(),
             _ => return self.query.on_key(self.selected(), key_event, context),
         }
         None
@@ -42,16 +46,10 @@ impl<Q: ListQuery> Component for List<Q> {
         .tap_mut(|v| v.extend(self.query.keyhints(context)))
     }
 
-    fn render(&self, area: Rect, buf: &mut Buffer, context: Context, focused: bool) {
-        let selected = self.selected();
+    fn render(&mut self, area: Rect, buf: &mut Buffer, context: Context, focused: bool) {
         let list = self.query.get_items(context);
         match focused {
-            true => StatefulWidget::render(
-                list_widget(list),
-                area,
-                buf,
-                &mut ListState::default().with_selected(Some(selected)),
-            ),
+            true => StatefulWidget::render(list_widget(list), area, buf, &mut self.selected),
             false => Widget::render(Text::from_iter(list), area, buf),
         }
     }
@@ -67,25 +65,21 @@ where
         .highlight_symbol(">")
 }
 
-#[derive(Debug, Clone, Copy)]
+#[derive(Debug, Clone)]
 pub struct List<Q> {
-    selected: WrappingUsize,
+    selected: ListState,
     query: Q,
 }
 
 impl<Q> List<Q> {
-    pub const fn new(len: usize, query: Q) -> Self {
-        Self::with_selected(0, len, query)
-    }
-
-    pub const fn with_selected(selected: usize, len: usize, query: Q) -> Self {
+    pub fn new(query: Q) -> Self {
         Self {
-            selected: WrappingUsize::with_value(selected, len - 1),
+            selected: ListState::default().with_selected(Some(0)),
             query,
         }
     }
 
     pub fn selected(&self) -> usize {
-        self.selected.value()
+        self.selected.selected().unwrap()
     }
 }

@@ -9,41 +9,22 @@ impl WrappingUsize {
         Self { value: 0, max }
     }
 
-    pub const fn with_value(value: usize, max: usize) -> Self {
-        Self {
-            value: value % (max + 1),
-            max,
-        }
+    pub const fn new_with_value(max: usize, value: usize) -> Self {
+        Self { value, max }
     }
 
-    pub const fn value(self) -> usize {
+    pub const fn value(&self) -> usize {
         self.value
     }
 
-    #[must_use = "method returns a new value"]
-    pub const fn increment(self) -> Self {
-        Self {
-            value: (self.value + 1) % (self.max + 1),
-            ..self
+    pub const fn increment(&mut self) {
+        self.value = (self.value + 1) % (self.max + 1)
+    }
+
+    pub const fn decrement(&mut self) {
+        self.value = match self.value {
+            0 => self.max,
+            _ => self.value - 1,
         }
-    }
-
-    #[must_use = "method returns a new value"]
-    pub const fn decrement(self) -> Self {
-        Self {
-            value: match self.value {
-                0 => self.max,
-                _ => self.value - 1,
-            },
-            ..self
-        }
-    }
-
-    pub const fn set_max(self, max: usize) -> Self {
-        Self::with_value(self.value, max)
-    }
-
-    pub const fn set_value(self, value: usize) -> Self {
-        Self::with_value(value, self.max)
     }
 }

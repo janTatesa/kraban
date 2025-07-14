@@ -5,15 +5,15 @@ mod view;
 
 use std::fmt::Debug;
 
-use due_tasks::DueTaskList;
+use due_tasks::DueTaskTable;
 use projects::ProjectsTable;
 
 use crate::table::{Table, TableQuery, table};
 
-#[derive(Debug, Clone, Copy, Default)]
+#[derive(Debug, Clone)]
 pub struct MainView {
     projects: table!(ProjectsTable),
-    due_tasks: table!(DueTaskList),
+    due_tasks: table!(DueTaskTable),
     focused_list: FocusedList,
 }
 
@@ -27,8 +27,8 @@ enum FocusedList {
 impl MainView {
     pub fn with_focused_project(project: usize) -> Self {
         Self {
-            projects: Table::with_default_index(project, ProjectsTable),
-            due_tasks: Table::default(),
+            projects: Table::new(project, ProjectsTable),
+            due_tasks: Table::new(0, DueTaskTable),
             focused_list: FocusedList::Projects,
         }
     }

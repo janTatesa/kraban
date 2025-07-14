@@ -33,9 +33,6 @@ pub struct State {
     due_tasks: Option<ReversedSortedVec<DueTask>>,
 }
 
-// When a task/project is created, the ui should switch to it
-pub struct SwitchToIndex(pub usize);
-
 impl State {
     pub fn new(is_testing: bool) -> Result<Self> {
         let mut value: Value = serde_json::from_str(
@@ -67,37 +64,32 @@ impl State {
         Ok(())
     }
 
-    pub fn handle_action(
-        &mut self,
-        current_list: CurrentList,
-        action: Action,
-        config: &Config,
-    ) -> Option<SwitchToIndex> {
-        let switch_to_index = match current_list {
-            CurrentList::Projects(index) => self.handle_project_action(action, index),
-            CurrentList::Tasks {
+    pub fn handle_action(&mut self, current_list: CurrentItem, action: Action, config: &Config) {
+        match current_list {
+            CurrentItem::Project(index) => self.handle_project_action(action, index),
+            CurrentItem::Task {
                 project,
                 column,
-                index,
+                task: index,
             } => self.handle_task_action(action, project, column, index, config),
-            // TODO: Due task list should have actions like normal task list does
-            CurrentList::DueTasks(_) => None,
+            CurrentItem::DueTask(_) => todo!(),
         };
 
         // The list might have been changed
         // TODO: Set it to none only when it actually changes
         self.due_tasks = None;
-        switch_to_index
     }
 }
 
-pub enum CurrentList<'a> {
-    Projects(Option<usize>),
-    DueTasks(Option<usize>),
-    Tasks {
+#[derive(strum_macros::AsRefStr, Debug)]
+#[strum(serialize_all = "lowercase")]
+pub enum CurrentItem<'a> {
+    Project(Option<usize>),
+    DueTask(Option<usize>),
+    Task {
         project: usize,
         column: &'a str,
-        index: Option<usize>,
+        task: Option<usize>,
     },
 }
 
@@ -106,12 +98,18 @@ fn path_to_state_file(is_testing: bool) -> Result<PathBuf> {
 }
 
 #[derive(Debug)]
-pub enum Action {
+pub enum Action<'a> {
     Delete,
     ChangePriority(Option<Priority>),
     ChangeDifficulty(Option<Difficulty>),
-    New(String),
+    New(ItemToCreate),
     Rename(String),
-    MoveToColumn(String),
+    MoveToColumn(&'a str),
     SetTaskDueDate(Option<Date>),
+}
+
+#[derive(Debug)]
+pub enum ItemToCreate {
+    Task(Task),
+    Project(Project),
 }

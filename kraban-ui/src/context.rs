@@ -2,9 +2,9 @@ use kraban_config::Config;
 use kraban_state::State;
 
 #[derive(Clone, Copy, Debug)]
-pub struct Context<'a> {
+pub struct Context<'a, 'b> {
     pub state: &'a State,
-    pub config: &'a Config,
+    pub config: &'b Config,
 }
 
 #[macro_export]
@@ -12,7 +12,7 @@ macro_rules! context {
     ($self:expr) => {
         Context {
             state: &$self.state,
-            config: &$self.config,
+            config: $self.config,
         }
     };
 }

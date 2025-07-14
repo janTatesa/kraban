@@ -1,17 +1,18 @@
 use std::{borrow::Cow, mem};
 
-use crossterm::event::{KeyCode, KeyEvent};
+use kraban_state::CurrentItem;
+use ratatui::crossterm::event::{KeyCode, KeyEvent};
 use ratatui::{
     buffer::Buffer,
     layout::Rect,
     style::{Style, Stylize},
     widgets::Widget,
 };
-use tap::{Pipe, Tap};
+use tap::Tap;
 use tui_textarea::{CursorMove, TextArea};
 
 use crate::{
-    Component, Context, Item, StateAction,
+    Component, Context, StateAction,
     action::{Action, state_action},
     keyhints::KeyHints,
 };
@@ -63,8 +64,8 @@ impl PromptTrait for InputPrompt {
         1
     }
 
-    fn title(&self, item: Item) -> Cow<'static, str> {
-        let item: &str = item.into();
+    fn title(&self, item: CurrentItem) -> Cow<'static, str> {
+        let item: &str = item.as_ref();
         format!("{} {item}", self.input_action).into()
     }
 
@@ -73,14 +74,14 @@ impl PromptTrait for InputPrompt {
     }
 }
 
-impl Component for InputPrompt {
-    fn on_key(&mut self, key_event: KeyEvent, _context: Context) -> Option<Action> {
+impl Component<'_> for InputPrompt {
+    fn on_key(&mut self, key_event: KeyEvent, _context: Context) -> Option<Action<'static>> {
         match key_event.code {
             KeyCode::Enter if !self.text_area.is_empty() => match self.input_action {
-                InputAction::Rename => StateAction::Rename(self.current_line_owned()),
-                InputAction::New => StateAction::New(self.current_line_owned()),
-            }
-            .pipe(state_action),
+                InputAction::Rename => state_action(StateAction::Rename(self.current_line_owned())),
+                InputAction::New => Some(Action::New(self.current_line_owned())),
+            },
+
             KeyCode::Enter => None,
             _ => {
                 self.text_area.input(key_event);
@@ -93,7 +94,7 @@ impl Component for InputPrompt {
         vec![("Enter", "Submit"), ("Other", "Consult readme")]
     }
 
-    fn render(&self, area: Rect, buf: &mut Buffer, _context: Context, _focused: bool) {
+    fn render(&mut self, area: Rect, buf: &mut Buffer, _context: Context, _focused: bool) {
         self.text_area.render(area, buf)
     }
 }

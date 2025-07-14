@@ -1,8 +1,9 @@
-use crossterm::event::{KeyCode, KeyEvent};
+use kraban_state::CurrentItem;
+use ratatui::crossterm::event::{KeyCode, KeyEvent};
 use ratatui::{layout::Constraint, text::Line};
 
 use crate::{
-    Context, Item, KeyNoModifiers,
+    Context, KeyNoModifiers,
     action::{Action, open_prompt},
     date_to_line, get,
     keyhints::KeyHints,
@@ -15,24 +16,32 @@ use crate::{
 };
 
 #[derive(Debug, Clone)]
-pub struct TaskTable {
+pub struct TaskTable<'a> {
     pub project_index: usize,
-    pub column: String,
+    pub column: &'a str,
     pub immutable: bool,
 }
 
-impl TableQuery<4> for TaskTable {
-    fn on_key(&self, index: Option<usize>, key: KeyEvent, context: Context) -> Option<Action> {
+impl<'a> TableQuery<'a, 4> for TaskTable<'a> {
+    fn on_key(
+        &self,
+        index: Option<usize>,
+        key: KeyEvent,
+        context: Context<'_, 'a>,
+    ) -> Option<Action<'a>> {
         let key = key.keycode_without_modifiers()?;
         let current_task =
-            index.map(|idx| get!(context, projects, self.project_index, &self.column, idx));
+            index.map(|idx| get!(context, projects, self.project_index, self.column, idx));
         match key {
-            KeyCode::Enter => open_prompt(MoveToColumnPrompt::new(context, self.column.clone())),
+            KeyCode::Enter => open_prompt(MoveToColumnPrompt::new(self.column)),
             _ if self.immutable => None,
-            KeyCode::Delete | KeyCode::Backspace => open_prompt(DeleteConfirmation {
-                name: current_task?.title.clone(),
-                item: Item::Task,
-            }),
+            KeyCode::Delete | KeyCode::Backspace => {
+                open_prompt(DeleteConfirmation(CurrentItem::Task {
+                    project: self.project_index,
+                    column: self.column,
+                    task: index,
+                }))
+            }
             KeyCode::Char('p') => open_prompt(PriorityPrompt::new(current_task?.priority)),
             KeyCode::Char('d') => open_prompt(DifficultyPrompt::new(current_task?.difficulty)),
             KeyCode::Char('r') => open_prompt(InputPrompt::new(
@@ -66,7 +75,7 @@ impl TableQuery<4> for TaskTable {
     }
 
     fn len(&self, context: Context) -> usize {
-        get!(context, projects, self.project_index, &self.column).len()
+        get!(context, projects, self.project_index, self.column).len()
     }
 
     fn header(&self) -> [&'static str; 4] {
@@ -82,8 +91,8 @@ impl TableQuery<4> for TaskTable {
         ]
     }
 
-    fn rows<'a>(&self, context: Context<'a>) -> impl Iterator<Item = [Line<'a>; 4]> {
-        get!(context, projects, self.project_index, &self.column)
+    fn rows<'b>(&self, context: Context<'b, 'b>) -> impl Iterator<Item = [Line<'b>; 4]> {
+        get!(context, projects, self.project_index, self.column)
             .iter()
             .map(|task| {
                 [

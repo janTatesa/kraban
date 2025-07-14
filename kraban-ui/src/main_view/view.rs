@@ -1,37 +1,16 @@
 use std::borrow::Cow;
 
-use kraban_state::CurrentList;
+use kraban_state::CurrentItem;
 
-use crate::{Context, Item, ViewTrait};
+use crate::{Context, ViewTrait};
 
 use super::{FocusedList, MainView};
 
 impl ViewTrait for MainView {
-    fn item(&self) -> Item {
+    fn current_item(&self) -> CurrentItem {
         match self.focused_list {
-            FocusedList::Projects => Item::Project,
-            FocusedList::DueTasks => Item::Task,
-        }
-    }
-
-    fn current_list(&self) -> CurrentList {
-        match self.focused_list {
-            FocusedList::Projects => CurrentList::Projects(self.projects.selected()),
-            FocusedList::DueTasks => CurrentList::DueTasks(self.projects.selected()),
-        }
-    }
-
-    fn refresh_max_indexes(&mut self, context: Context) {
-        match self.focused_list {
-            FocusedList::Projects => self.projects.update_max_index(context),
-            FocusedList::DueTasks => self.due_tasks.update_max_index(context),
-        }
-    }
-
-    fn switch_to_index(&mut self, index: usize) {
-        match self.focused_list {
-            FocusedList::Projects => self.projects.select(index),
-            FocusedList::DueTasks => self.due_tasks.select(index),
+            FocusedList::Projects => CurrentItem::Project(self.projects.selected()),
+            FocusedList::DueTasks => CurrentItem::DueTask(self.projects.selected()),
         }
     }
 
