@@ -14,8 +14,8 @@ use kraban_lib::dir::{Dir, get_dir};
 
 #[derive(Debug)]
 pub struct Config {
-    pub tabs: Vec<Tab>,
-    pub columns: Vec<Column>,
+    pub tabs: Vec<TabConfig>,
+    pub columns: Vec<ColumnConfig>,
     pub app_color: Color,
     pub collapse_unfocused_tabs: bool,
     pub show_key_hints: bool,
@@ -24,12 +24,12 @@ pub struct Config {
 }
 
 #[derive(Default, Debug)]
-pub struct Tab {
-    pub columns: Vec<Column>,
+pub struct TabConfig {
+    pub columns: Vec<ColumnConfig>,
 }
 
 #[derive(Clone, Debug)]
-pub struct Column {
+pub struct ColumnConfig {
     pub name: String,
     pub color: Color,
     pub done_column: bool,
@@ -93,7 +93,7 @@ impl Config {
         let columns = columns.into_iter().map(|column| {
             (
                 column.tab,
-                Column {
+                ColumnConfig {
                     name: column.name,
                     color: column.color,
                     done_column: column.done_column,
@@ -103,7 +103,7 @@ impl Config {
 
         let tabs = columns.clone().fold(Vec::new(), |mut tabs, (tab, column)| {
             if tab >= tabs.len() {
-                tabs.resize_with(tab + 1, Tab::default);
+                tabs.resize_with(tab + 1, TabConfig::default);
             }
             tabs[tab].columns.push(column);
             tabs

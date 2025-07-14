@@ -1,14 +1,15 @@
 use std::{borrow::Cow, collections::HashMap, iter};
 
 use crate::{
-    Component, Context, Item, StateAction,
+    Component, Context, StateAction,
     action::{Action, state_action},
     keyhints::KeyHints,
 };
 use chrono::{Days, Local, Months};
-use crossterm::event::{KeyCode, KeyEvent};
 use itertools::chain;
 use kraban_lib::date::{ChronoDate, chrono_date_to_time_date, time_date_to_chrono_date};
+use kraban_state::CurrentItem;
+use ratatui::crossterm::event::{KeyCode, KeyEvent};
 use ratatui::{
     buffer::Buffer,
     layout::Rect,
@@ -49,14 +50,14 @@ impl PromptTrait for DueDatePrompt {
         22 // Each column has 2 characters with a space in between. Plus we add 2 for spacing
     }
 
-    fn title(&self, _item: Item) -> Cow<'static, str> {
+    fn title(&self, _item: CurrentItem) -> Cow<'static, str> {
         "Change due date".into()
     }
 }
 
 const DAYS_IN_WEEK: u64 = 7;
-impl Component for DueDatePrompt {
-    fn on_key(&mut self, key_event: KeyEvent, _context: Context) -> Option<Action> {
+impl Component<'_> for DueDatePrompt {
+    fn on_key(&mut self, key_event: KeyEvent, _context: Context) -> Option<Action<'static>> {
         self.current_date = match key_event.code {
             KeyCode::Tab => self.current_date.checked_add_months(Months::new(1)),
             KeyCode::BackTab => self.current_date.checked_sub_months(Months::new(1)),
@@ -90,7 +91,7 @@ impl Component for DueDatePrompt {
         ]
     }
 
-    fn render(&self, area: Rect, buf: &mut Buffer, context: Context, _focused: bool) {
+    fn render(&mut self, area: Rect, buf: &mut Buffer, context: Context, _focused: bool) {
         let selected_date = chrono_date_to_time_date(self.current_date);
         let selected_style = Style::new().fg(context.config.app_color).reversed();
         let today = chrono_date_to_time_date(Local::now());

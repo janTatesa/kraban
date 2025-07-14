@@ -8,20 +8,20 @@ use tab::TabView;
 
 use crate::{Context, get};
 
-#[derive(Default, Clone, Debug)]
-pub struct TasksView {
+#[derive(Clone, Debug)]
+pub struct TasksView<'a> {
     project_index: usize,
-    tabs: Vec<TabView>,
+    tabs: Vec<TabView<'a>>,
     focused_tab: WrappingUsize,
 }
 
-impl TasksView {
-    pub fn new(project: usize, context: Context) -> Self {
+impl<'a> TasksView<'a> {
+    pub fn new(project: usize, context: Context<'_, 'a>) -> Self {
         let tabs = get!(context, tabs);
-        let tab = WrappingUsize::new(tabs.len() - 1);
+        let focused_tab = WrappingUsize::new(tabs.len() - 1);
         Self {
             project_index: project,
-            focused_tab: tab,
+            focused_tab,
             tabs: tabs
                 .iter()
                 .enumerate()
@@ -34,7 +34,7 @@ impl TasksView {
         project: usize,
         column_name: &str,
         task: usize,
-        context: Context,
+        context: Context<'_, 'a>,
     ) -> Self {
         let tabs = get!(context, tabs);
 
@@ -59,7 +59,7 @@ impl TasksView {
 
         Self {
             project_index: project,
-            focused_tab: WrappingUsize::with_value(focused_tab, tabs.len()),
+            focused_tab: WrappingUsize::new_with_value(tabs.len() - 1, focused_tab),
             tabs,
         }
     }

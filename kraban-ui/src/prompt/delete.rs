@@ -1,6 +1,7 @@
 use std::borrow::Cow;
 
-use crossterm::event::{KeyCode, KeyEvent};
+use kraban_state::CurrentItem;
+use ratatui::crossterm::event::{KeyCode, KeyEvent};
 use ratatui::{
     buffer::Buffer,
     layout::Rect,
@@ -10,26 +11,24 @@ use ratatui::{
 };
 
 use crate::{
-    Component, Context, Item, StateAction,
+    Component, Context, StateAction,
     action::{Action, state_action},
+    get,
     keyhints::KeyHints,
 };
 
 use super::{DEFAULT_WIDTH, PromptTrait};
 
 #[derive(Debug)]
-pub struct DeleteConfirmation {
-    pub name: String,
-    pub item: Item,
-}
+pub struct DeleteConfirmation<'a>(pub CurrentItem<'a>);
 
-impl PromptTrait for DeleteConfirmation {
+impl PromptTrait for DeleteConfirmation<'_> {
     fn height(&self, _context: Context) -> u16 {
         1
     }
 
-    fn title(&self, item: Item) -> Cow<'static, str> {
-        let item: &str = item.into();
+    fn title(&self, item: CurrentItem) -> Cow<'static, str> {
+        let item: &str = item.as_ref();
         format!("Delete {item}").into()
     }
 
@@ -38,8 +37,8 @@ impl PromptTrait for DeleteConfirmation {
     }
 }
 
-impl Component for DeleteConfirmation {
-    fn on_key(&mut self, key_event: KeyEvent, _context: Context) -> Option<Action> {
+impl Component<'_> for DeleteConfirmation<'_> {
+    fn on_key(&mut self, key_event: KeyEvent, _context: Context) -> Option<Action<'static>> {
         match key_event.code {
             KeyCode::Char('y' | 'Y') | KeyCode::Enter => state_action(StateAction::Delete),
             _ => None,
@@ -50,16 +49,25 @@ impl Component for DeleteConfirmation {
         vec![("Y/y/Enter", "Confirm")]
     }
 
-    fn render(&self, area: Rect, buf: &mut Buffer, context: Context, _focused: bool) {
-        let item_type: &str = self.item.into();
-        let spans = [
+    fn render(&mut self, area: Rect, buf: &mut Buffer, context: Context, _focused: bool) {
+        Line::from_iter([
             "Are you sure to delete ".into(),
-            item_type.into(),
+            Span::raw::<&str>(self.0.as_ref()),
             " ".into(),
-            Span::styled(&self.name, Style::new().fg(context.config.app_color)),
+            Span::styled(
+                match self.0 {
+                    CurrentItem::Project(idx) => &get!(context, projects, idx.unwrap()).title,
+                    CurrentItem::DueTask(idx) => &get!(context, due_tasks, idx.unwrap()).task.title,
+                    CurrentItem::Task {
+                        project,
+                        column,
+                        task,
+                    } => &get!(context, projects, project, column, task.unwrap()).title,
+                },
+                Style::new().fg(context.config.app_color),
+            ),
             "?".into(),
-        ];
-
-        Line::from_iter(spans).centered().render(area, buf);
+        ])
+        .render(area, buf);
     }
 }

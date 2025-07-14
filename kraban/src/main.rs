@@ -7,8 +7,8 @@ use app::App;
 use cli::cli;
 use cli_log::init_cli_log;
 use color_eyre::{Result, eyre::Context};
-use crossterm::{event::EnableFocusChange, execute};
 use kraban_config::Config;
+use ratatui::crossterm::{event::EnableFocusChange, execute};
 fn main() -> Result<()> {
     color_eyre::install()?;
     let cli = cli();
@@ -29,10 +29,10 @@ fn main() -> Result<()> {
     }
 
     init_cli_log!();
-    let terminal = ratatui::init();
+    let config = Config::new(*cli.get_one("testing").expect("Option has default value"))?;
     let result = execute!(stdout(), EnableFocusChange)
         .wrap_err("Failed to enable focus change")
-        .and(App::run(terminal, cli));
+        .and(App::run(&config, cli));
     ratatui::restore();
     result
 }

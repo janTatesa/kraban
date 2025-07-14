@@ -17,6 +17,5 @@ kraban-state.workspace = true
 kraban-config.workspace = true
 cli-log.workspace = true
 color-eyre.workspace = true
-crossterm.workspace = true
 ratatui.workspace = true
 

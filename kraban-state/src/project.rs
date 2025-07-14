@@ -1,9 +1,10 @@
 use core::panic;
 
-use crate::{Action, ReversedSortedVec, SwitchToIndex};
+use crate::{Action, ItemToCreate, ReversedSortedVec};
 
 use super::{Column, Priority, State, defaultmap::DefaultMap};
 use derivative::Derivative;
+use kraban_lib::unwrap_or_ret;
 use serde::{Deserialize, Serialize};
 use serde_with::skip_serializing_none;
 
@@ -27,27 +28,17 @@ impl State {
         self.projects.inner()
     }
 
-    pub(super) fn handle_project_action(
-        &mut self,
-        action: Action,
-        index: Option<usize>,
-    ) -> Option<SwitchToIndex> {
+    pub(super) fn handle_project_action(&mut self, action: Action, index: Option<usize>) {
         let projects = &mut self.projects;
         match action {
-            Action::Delete => _ = projects.remove(index?),
-            Action::ChangePriority(priority) => change_priority(index?, projects, priority),
-            Action::New(title) => return self.new_project(title),
-            Action::Rename(title) => rename(index?, projects, title),
+            Action::Delete => _ = projects.remove(unwrap_or_ret!(index)),
+            Action::ChangePriority(priority) => {
+                change_priority(unwrap_or_ret!(index), projects, priority)
+            }
+            Action::New(ItemToCreate::Project(project)) => _ = self.projects.push(project),
+            Action::Rename(title) => rename(unwrap_or_ret!(index), projects, title),
             action => panic!("Cannot perform {action:?} when in projects view"),
         }
-        None
-    }
-
-    fn new_project(&mut self, title: String) -> Option<SwitchToIndex> {
-        Some(SwitchToIndex(self.projects.push(Project {
-            title,
-            ..Project::default()
-        })))
     }
 }
 

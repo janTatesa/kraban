@@ -40,7 +40,7 @@ impl From<Difficulty> for Line<'static> {
     }
 }
 
-impl From<Option<Difficulty>> for Action {
+impl From<Option<Difficulty>> for Action<'_> {
     fn from(value: Option<Difficulty>) -> Self {
         Self::ChangeDifficulty(value)
     }

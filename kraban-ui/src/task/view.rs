@@ -1,33 +1,20 @@
 use std::borrow::Cow;
 
-use kraban_state::CurrentList;
+use kraban_state::CurrentItem;
 
-use crate::{Context, Item, ViewTrait};
+use crate::{Context, ViewTrait};
 
 use super::TasksView;
 
-impl ViewTrait for TasksView {
-    fn item(&self) -> Item {
-        Item::Task
-    }
-
-    fn current_list(&self) -> CurrentList {
+impl ViewTrait for TasksView<'_> {
+    fn current_item(&self) -> CurrentItem {
         let tab = self.focused_tab.value();
         let (column, index) = self.tabs[tab].get_column_and_task_index();
-        CurrentList::Tasks {
+        CurrentItem::Task {
             project: self.project_index,
             column,
-            index,
+            task: index,
         }
-    }
-
-    fn refresh_max_indexes(&mut self, context: Context) {
-        let tab = self.focused_tab.value();
-        self.tabs[tab].update_column_max_index(context);
-    }
-
-    fn switch_to_index(&mut self, index: usize) {
-        self.tabs[self.focused_tab.value()].set_task_index(index);
     }
 
     fn title(&self, context: Context) -> Cow<'static, str> {
