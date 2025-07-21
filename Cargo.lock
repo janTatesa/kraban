@@ -168,9 +168,9 @@ dependencies = [
 
 [[package]]
 name = "cc"
-version = "1.2.29"
+version = "1.2.30"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "5c1599538de2394445747c8cf7935946e3cc27e9625f889d979bfb2aaf569362"
+checksum = "deec109607ca693028562ed836a5f1c4b8bd77755c4e132fc5ce11b0b6211ae7"
 dependencies = [
  "shlex",
 ]
@@ -585,9 +585,9 @@ checksum = "f4c7245a08504955605670dbf141fceab975f15ca21570696aebe9d2e71576bd"
 
 [[package]]
 name = "instability"
-version = "0.3.7"
+version = "0.3.9"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "0bf9fed6d91cfb734e7476a06bde8300a1b94e217e1b523b6f0cd1a01998c71d"
+checksum = "435d80800b936787d62688c927b6490e887c7ef5ff9ce922c6c6050fca75eb9a"
 dependencies = [
  "darling",
  "indoc",
@@ -638,7 +638,7 @@ dependencies = [
 
 [[package]]
 name = "kraban"
-version = "0.5.2"
+version = "0.5.3"
 dependencies = [
  "clap",
  "cli-log",
@@ -651,7 +651,7 @@ dependencies = [
 
 [[package]]
 name = "kraban-config"
-version = "0.5.2"
+version = "0.5.3"
 dependencies = [
  "color-eyre",
  "figment",
@@ -663,20 +663,20 @@ dependencies = [
 
 [[package]]
 name = "kraban-lib"
-version = "0.5.2"
+version = "0.5.3"
 dependencies = [
  "chrono",
  "color-eyre",
  "dirs",
- "strum 0.27.1",
- "strum_macros 0.27.1",
+ "strum 0.27.2",
+ "strum_macros 0.27.2",
  "tap",
  "time",
 ]
 
 [[package]]
 name = "kraban-state"
-version = "0.5.2"
+version = "0.5.3"
 dependencies = [
  "chrono",
  "cli-log",
@@ -690,15 +690,15 @@ dependencies = [
  "serde",
  "serde_json",
  "serde_with",
- "strum 0.27.1",
- "strum_macros 0.27.1",
+ "strum 0.27.2",
+ "strum_macros 0.27.2",
  "tap",
  "time",
 ]
 
 [[package]]
 name = "kraban-ui"
-version = "0.5.2"
+version = "0.5.3"
 dependencies = [
  "arrayvec",
  "chrono",
@@ -710,8 +710,8 @@ dependencies = [
  "kraban-lib",
  "kraban-state",
  "ratatui",
- "strum 0.27.1",
- "strum_macros 0.27.1",
+ "strum 0.27.2",
+ "strum_macros 0.27.2",
  "tap",
  "time",
  "tui-textarea",
@@ -731,9 +731,9 @@ checksum = "1171693293099992e19cddea4e8b849964e9846f4acee11b3948bcc337be8776"
 
 [[package]]
 name = "libredox"
-version = "0.1.4"
+version = "0.1.6"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "1580801010e535496706ba011c15f8532df6b42297d2e471fec38ceadd8c0638"
+checksum = "4488594b9328dee448adb906d8b126d9b7deb7cf5c22161ee591610bb1be83c0"
 dependencies = [
  "bitflags",
  "libc",
@@ -947,9 +947,9 @@ dependencies = [
 
 [[package]]
 name = "redox_syscall"
-version = "0.5.13"
+version = "0.5.14"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "0d04b7d0ee6b4a0207a0a7adb104d23ecb0b47d6beae7152d0fa34b692b29fd6"
+checksum = "de3a5d9f0aba1dbcec1cc47f0ff94a4b778fe55bca98a6dfa92e4e094e57b1c4"
 dependencies = [
  "bitflags",
 ]
@@ -1068,9 +1068,9 @@ dependencies = [
 
 [[package]]
 name = "serde_json"
-version = "1.0.140"
+version = "1.0.141"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "20068b6e96dc6c9bd23e01df8827e6c7e1f2fddd43c21810382803c136b99373"
+checksum = "30b9eff21ebe718216c6ec64e1d9ac57087aad11efc64e32002bce4a0d4c03d3"
 dependencies = [
  "itoa",
  "memchr",
@@ -1193,9 +1193,9 @@ dependencies = [
 
 [[package]]
 name = "strum"
-version = "0.27.1"
+version = "0.27.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "f64def088c51c9510a8579e3c5d67c65349dcf755e5479ad3d010aa6454e2c32"
+checksum = "af23d6f6c1a224baef9d3f61e287d2761385a5b88fdab4eb4c6f11aeb54c4bcf"
 
 [[package]]
 name = "strum_macros"
@@ -1212,14 +1212,13 @@ dependencies = [
 
 [[package]]
 name = "strum_macros"
-version = "0.27.1"
+version = "0.27.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "c77a8c5abcaf0f9ce05d62342b7d298c346515365c36b673df4ebe3ced01fde8"
+checksum = "7695ce3845ea4b33927c055a39dc438a45b059f7c1b3d91d38d10355fb8cbca7"
 dependencies = [
  "heck",
  "proc-macro2",
  "quote",
- "rustversion",
  "syn 2.0.104",
 ]
 
