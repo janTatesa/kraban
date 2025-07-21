@@ -1,3 +1,4 @@
+use core::panic;
 use std::ops::BitAnd;
 
 use cli_log::info;
@@ -48,6 +49,17 @@ impl<'a> Ui<'a> {
         // So far all prompts exit after doing their actions
         self.prompt_stack.pop();
         match (action, self.item_to_create.take()) {
+            (Action::State(action), Some(mut item)) => {
+                modify_currently_created_item(action, &mut item);
+                match self.prompt_stack.is_empty() {
+                    true => return Some(StateAction::New(item)),
+                    false => self.item_to_create = Some(item),
+                }
+            }
+            (_, Some(item)) => match self.prompt_stack.is_empty() {
+                true => return Some(StateAction::New(item)),
+                false => self.item_to_create = Some(item),
+            },
             (Action::SwitchToView(view), _) => self.view = view,
             (Action::OpenPrompt(prompt), _) => self.prompt_stack.push(prompt),
             (Action::State(action), _) => return Some(action),
@@ -85,5 +97,23 @@ impl<'a> Ui<'a> {
         }
 
         None
+    }
+}
+
+fn modify_currently_created_item(action: kraban_state::Action<'_>, item: &mut ItemToCreate) {
+    match (action, item) {
+        (StateAction::ChangePriority(priority), ItemToCreate::Task(task)) => {
+            task.priority = priority
+        }
+        (StateAction::ChangePriority(priority), ItemToCreate::Project(project)) => {
+            project.priority = priority
+        }
+        (kraban_state::Action::ChangeDifficulty(difficulty), ItemToCreate::Task(task)) => {
+            task.difficulty = difficulty
+        }
+        (kraban_state::Action::SetTaskDueDate(date), ItemToCreate::Task(task)) => {
+            task.due_date = date
+        }
+        _ => panic!(),
     }
 }
