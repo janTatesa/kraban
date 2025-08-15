@@ -102,7 +102,10 @@ impl<'a> ColumnView<'a> {
                 prompt(InputPrompt::new(config, InputAction::New, placeholder))
             }
             (KeyCode::Enter, Some(_)) => prompt(MoveToColumnPrompt::new(self.column)),
-            _ if self.immutable => None,
+            _ if self.immutable => {
+                self.table.on_key(key);
+                None
+            }
             (KeyCode::Delete | KeyCode::Backspace, Some(_)) => prompt(TaskDeleteConfirmation::new(
                 self.project_idx,
                 self.column,
