@@ -27,7 +27,7 @@ serde = { version = "1.0", features = ["derive"] }
 cli-log = "2.1"
 strum = "0.27"
 strum_macros = "0.27"
-time = { version = "0.3", features = ["serde"] }
+time = { version = "0.3", features = ["serde", "local-offset"] }
 chrono = { version = "0.4", features = ["now", "serde"] }
 kraban-ui = {path = "./kraban-ui", version = "0.5.4"}
 kraban-state = {path = "./kraban-state", version = "0.5.4"}
