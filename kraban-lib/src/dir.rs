@@ -1,4 +1,3 @@
-#[cfg(not(debug_assertions))]
 use std::{fs, path::PathBuf};
 
 #[cfg(not(debug_assertions))]
