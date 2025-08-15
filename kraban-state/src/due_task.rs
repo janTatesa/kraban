@@ -1,72 +1,50 @@
-use crate::Priority;
-
-use super::{State, Task, sorted_vec::ReversedSortedVec};
-use kraban_config::Config;
-use ratatui::style::Color;
-use serde::{Deserialize, Serialize};
 use std::cmp::Ordering;
 
-#[derive(PartialEq, Eq, Serialize, Deserialize, Debug)]
-pub struct DueTask {
-    pub task: Task,
-    pub index: usize,
-    pub project_index: usize,
-    pub project_title: String,
-    pub project_priority: Option<Priority>,
-    pub column_name: String,
-    pub column_color: Color,
+use kraban_config::{ColumnConfig, Config};
+use time::Date;
+
+use super::State;
+use crate::{Difficulty, Priority, Project};
+
+#[derive(PartialEq, Eq, Debug)]
+pub struct DueTask<'a> {
+    pub priority: Option<Priority>,
+    pub due_date: Date,
+    pub difficulty: Option<Difficulty>,
+    pub title: &'a str,
+    pub idx: usize,
+    pub project_idx: usize,
+    pub project: &'a Project,
+    pub column_config: &'a ColumnConfig
 }
 
-impl Ord for DueTask {
-    fn cmp(&self, other: &Self) -> Ordering {
-        self.task.due_date.cmp(&other.task.due_date).reverse()
-    }
+impl Ord for DueTask<'_> {
+    fn cmp(&self, other: &Self) -> Ordering { other.due_date.cmp(&self.due_date) }
 }
 
-impl PartialOrd for DueTask {
-    fn partial_cmp(&self, other: &Self) -> Option<Ordering> {
-        Some(self.cmp(other))
-    }
+impl PartialOrd for DueTask<'_> {
+    fn partial_cmp(&self, other: &Self) -> Option<Ordering> { Some(self.cmp(other)) }
 }
 
-impl State {
-    pub fn due_tasks(&self) -> &Vec<DueTask> {
-        self.due_tasks
-            .as_ref()
-            .expect("Due tasks should have been refreshed")
-            .inner()
-    }
-
-    // TODO: simplify this
-    pub fn compile_due_tasks_list(&mut self, config: &Config) {
-        if self.due_tasks.is_none() {
-            let due_tasks = config
-                .columns
-                .iter()
+impl<'a> State {
+    // TODO: Maybe iomit using vec smh
+    pub fn due_tasks(&'a self, config: &'a Config) -> impl Iterator<Item = DueTask<'a>> {
+        let mut vec = Vec::from_iter(
+            config
+                .column_configs()
                 .filter(|column| !column.done_column)
-                .flat_map(|column| {
-                    self.projects.inner().iter().enumerate().flat_map(
-                        move |(project_index, project)| {
-                            project
-                                .columns
-                                .get(&column.name)
-                                .inner()
-                                .iter()
-                                .enumerate()
-                                .filter(|(_, task)| task.due_date.is_some())
-                                .map(move |(index, task)| DueTask {
-                                    task: task.clone(),
-                                    project_title: project.title.clone(),
-                                    column_name: column.name.clone(),
-                                    column_color: column.color,
-                                    index,
-                                    project_priority: project.priority,
-                                    project_index,
-                                })
-                        },
-                    )
-                });
-            self.due_tasks = Some(ReversedSortedVec::new(due_tasks.collect()));
-        }
+                .flat_map(|column| self.column_due_tasks(column))
+        );
+
+        vec.sort();
+        vec.reverse();
+        vec.into_iter()
+    }
+
+    fn column_due_tasks(&'a self, column: &'a ColumnConfig) -> impl Iterator<Item = DueTask<'a>> {
+        self.projects
+            .iter()
+            .enumerate()
+            .flat_map(|(project_idx, project)| project.due_tasks_by_column(column, project_idx))
     }
 }

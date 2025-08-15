@@ -1,20 +1,28 @@
-use std::{fs, path::PathBuf, str::FromStr};
+#[cfg(not(debug_assertions))]
+use std::str::FromStr;
+use std::{fs, path::PathBuf};
 
-use color_eyre::eyre::{ContextCompat, Result};
+#[cfg(not(debug_assertions))]
+use color_eyre::eyre::ContextCompat;
+use color_eyre::eyre::Result;
+#[cfg(not(debug_assertions))]
 use tap::Tap;
 
-pub fn get_dir(dir: Dir, is_testing: bool) -> Result<PathBuf> {
-    let path = match is_testing {
-        true => PathBuf::from_str("testing-files").unwrap(),
-        false => {
-            match dir {
-                Dir::State => dirs::state_dir().or(dirs::data_dir()), // madOS doesn't have a state dir apparently
-                Dir::Config => dirs::config_dir(),
-            }
-            .wrap_err_with(|| format!("Cannot get OS {dir} dir"))?
-            .tap_mut(|p| p.push("kraban"))
-        }
-    };
+#[cfg(debug_assertions)]
+pub fn get_dir(_dir: Dir) -> Result<PathBuf> {
+    let path = PathBuf::from_iter(["testing-files"]);
+    fs::create_dir_all(&path)?;
+    Ok(path)
+}
+
+#[cfg(not(debug_assertions))]
+pub fn get_dir(dir: Dir) -> Result<PathBuf> {
+    let path = match dir {
+        Dir::State => dirs::state_dir().or(dirs::data_dir()), // madOS doesn't have a state dir apparently
+        Dir::Config => dirs::config_dir(),
+    }
+    .wrap_err_with(|| format!("Cannot get OS {dir} dir"))?
+    .tap_mut(|p| p.push("kraban"));
 
     fs::create_dir_all(&path)?;
     Ok(path)

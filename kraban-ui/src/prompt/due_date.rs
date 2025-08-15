@@ -1,99 +1,108 @@
-use std::{borrow::Cow, collections::HashMap, iter};
+use std::{collections::HashMap, iter};
 
-use crate::{
-    Component, Context, StateAction,
-    action::{Action, state_action},
-    keyhints::KeyHints,
-};
 use chrono::{Days, Local, Months};
 use itertools::chain;
-use kraban_lib::date::{ChronoDate, chrono_date_to_time_date, time_date_to_chrono_date};
-use kraban_state::CurrentItem;
-use ratatui::crossterm::event::{KeyCode, KeyEvent};
+use kraban_config::Config;
+use kraban_lib::{ChronoDate, chrono_date_to_time_date, time_date_to_chrono_date};
+use kraban_state::{State, Task};
 use ratatui::{
     buffer::Buffer,
+    crossterm::event::{KeyCode, KeyEvent, KeyModifiers},
     layout::Rect,
     style::{Color, Style, Stylize},
     widgets::{
         Widget,
-        calendar::{CalendarEventStore, Monthly},
-    },
+        calendar::{CalendarEventStore, Monthly}
+    }
 };
-use tap::Pipe;
 
-use super::PromptTrait;
+use super::Prompt;
+use crate::keyhints::Keyhints;
 
-#[derive(Debug, Clone, Copy)]
 pub struct DueDatePrompt {
     old_date: Option<time::Date>,
-    current_date: ChronoDate,
+    currently_creating: Option<Task>,
+    current_date: ChronoDate
+}
+
+const DAYS_IN_WEEK: u64 = 7;
+const WEEK: Days = Days::new(DAYS_IN_WEEK);
+
+pub enum Response {
+    Update(DueDatePrompt),
+    SetDueDate(Option<time::Date>),
+    ModifyCurrentlyCreatedTask(Task)
 }
 
 impl DueDatePrompt {
-    pub fn new(old_date: Option<time::Date>) -> Self {
+    pub fn new(currently_creating: Option<Task>, old_date: Option<time::Date>) -> Self {
         let current_date = old_date
             .map(time_date_to_chrono_date)
             .unwrap_or(Local::now());
         Self {
             old_date,
             current_date,
+            currently_creating
+        }
+    }
+
+    pub fn on_key(mut self, key: KeyEvent) -> Response {
+        if key.modifiers == KeyModifiers::NONE {
+            self.current_date = match key.code {
+                KeyCode::Tab => self.current_date.checked_add_months(Months::new(1)),
+                KeyCode::BackTab => self.current_date.checked_sub_months(Months::new(1)),
+                KeyCode::Right => self.current_date.checked_add_days(Days::new(1)),
+                KeyCode::Left => self.current_date.checked_sub_days(Days::new(1)),
+                KeyCode::Up => self.current_date.checked_sub_days(WEEK),
+                KeyCode::Down => self.current_date.checked_add_days(WEEK),
+                KeyCode::Enter => {
+                    let date = chrono_date_to_time_date(self.current_date);
+                    return Self::due_date_selected(self.currently_creating, Some(date));
+                }
+                KeyCode::Delete | KeyCode::Backspace => {
+                    return Self::due_date_selected(self.currently_creating, None)
+                }
+                _ => None
+            }
+            .unwrap_or(self.current_date);
+        }
+
+        Response::Update(self)
+    }
+
+    fn due_date_selected(
+        currently_creating: Option<Task>,
+        due_date: Option<time::Date>
+    ) -> Response {
+        match currently_creating {
+            Some(mut task) => {
+                task.set_due_date(due_date);
+                Response::ModifyCurrentlyCreatedTask(task)
+            }
+            None => Response::SetDueDate(due_date)
         }
     }
 }
 
-impl PromptTrait for DueDatePrompt {
-    fn height(&self, _context: Context) -> u16 {
-        8 // Calendar has max 5 rows + month header + weekdays header
+impl Prompt for DueDatePrompt {
+    fn height(&self, _: &State, _: &Config) -> u16 {
+        const HEADERS: u16 = 2;
+        const MAX_ROWS: u16 = 6;
+        const HEIGHT: u16 = HEADERS + MAX_ROWS;
+        HEIGHT
     }
 
     fn width(&self) -> u16 {
-        22 // Each column has 2 characters with a space in between. Plus we add 2 for spacing
+        const CHARACTERS_PER_COLUMN: u16 = 2;
+        const SPACING: u16 = 2;
+        const WIDTH: u16 = (DAYS_IN_WEEK as u16 * (CHARACTERS_PER_COLUMN + 1)) - 1 + SPACING;
+        WIDTH
     }
 
-    fn title(&self, _item: CurrentItem) -> Cow<'static, str> {
-        "Change due date".into()
-    }
-}
-
-const DAYS_IN_WEEK: u64 = 7;
-impl Component<'_> for DueDatePrompt {
-    fn on_key(&mut self, key_event: KeyEvent, _context: Context) -> Option<Action<'static>> {
-        self.current_date = match key_event.code {
-            KeyCode::Tab => self.current_date.checked_add_months(Months::new(1)),
-            KeyCode::BackTab => self.current_date.checked_sub_months(Months::new(1)),
-            KeyCode::Right => self.current_date.checked_add_days(Days::new(1)),
-            KeyCode::Left => self.current_date.checked_sub_days(Days::new(1)),
-            KeyCode::Up => self.current_date.checked_sub_days(Days::new(DAYS_IN_WEEK)),
-            KeyCode::Down => self.current_date.checked_add_days(Days::new(DAYS_IN_WEEK)),
-            KeyCode::Enter => {
-                return self
-                    .current_date
-                    .pipe(chrono_date_to_time_date)
-                    .pipe(Some)
-                    .pipe(StateAction::SetTaskDueDate)
-                    .pipe(state_action);
-            }
-            KeyCode::Delete | KeyCode::Backspace => {
-                return state_action(StateAction::SetTaskDueDate(None));
-            }
-
-            _ => None,
-        }?;
-        None
-    }
-
-    fn key_hints(&self, _context: Context) -> KeyHints {
-        vec![
-            ("Delete/Backspace", "Delete due date"),
-            ("Tab/Backtab", "Switch month"),
-            ("Arrows", "Pick day"),
-            ("Enter", "Submit"),
-        ]
-    }
-
-    fn render(&mut self, area: Rect, buf: &mut Buffer, context: Context, _focused: bool) {
+    fn title(&self) -> &'static str { "Change due date" }
+    fn render(&mut self, area: Rect, buf: &mut Buffer, _: &State, config: &Config) {
         let selected_date = chrono_date_to_time_date(self.current_date);
-        let selected_style = Style::new().fg(context.config.app_color).reversed();
+        let selected_style = Style::new().fg(config.app_color).reversed();
         let today = chrono_date_to_time_date(Local::now());
         let today_style = Style::new().fg(Color::Green).reversed();
         let old_date_style = Style::new().fg(Color::Yellow).reversed();
@@ -109,5 +118,16 @@ impl Component<'_> for DueDatePrompt {
             .show_weekdays_header(Style::new().fg(Color::Green).italic())
             .show_month_header(Style::new().fg(Color::Yellow).bold())
             .render(area, buf);
+    }
+}
+
+impl Keyhints for DueDatePrompt {
+    fn keyhints(&self, _: &State, _: &Config) -> impl IntoIterator<Item = (&str, &str)> {
+        [
+            ("Delete/Backspace", "Delete due date"),
+            ("Tab/Backtab", "Switch month"),
+            ("Arrows", "Pick day"),
+            ("Enter", "Submit")
+        ]
     }
 }

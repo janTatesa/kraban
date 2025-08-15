@@ -1,4 +1,4 @@
-use std::{borrow::Borrow, hash::Hash};
+use std::{borrow::Borrow, hash::Hash, ops::Deref};
 
 use hashbrown::HashMap;
 use serde::{Deserialize, Serialize};
@@ -9,21 +9,27 @@ use serde::{Deserialize, Serialize};
 pub struct DefaultMap<K: Eq + Hash, V> {
     inner: HashMap<K, V>,
     #[serde(skip)]
-    default: V,
+    default: V
+}
+
+impl<K: Eq + Hash, V> Deref for DefaultMap<K, V> {
+    type Target = HashMap<K, V>;
+
+    fn deref(&self) -> &Self::Target { &self.inner }
 }
 
 impl<K: Eq + Hash, V: Default> DefaultMap<K, V> {
-    pub fn new(hash_map: HashMap<K, V>) -> Self {
+    pub fn with_capacity(capacity: usize) -> Self {
         Self {
-            inner: hash_map,
-            default: V::default(),
+            inner: HashMap::with_capacity(capacity),
+            default: V::default()
         }
     }
 
     pub fn get<Q>(&self, k: &Q) -> &V
     where
         K: Borrow<Q>,
-        Q: ?Sized + Eq + Hash,
+        Q: ?Sized + Eq + Hash
     {
         self.inner.get(k).unwrap_or(&self.default)
     }
@@ -32,12 +38,8 @@ impl<K: Eq + Hash, V: Default> DefaultMap<K, V> {
     where
         K: Borrow<Q>,
         &'a Q: Into<K>,
-        Q: ToOwned<Owned = K> + Hash + Eq + ?Sized,
+        Q: ToOwned<Owned = K> + Hash + Eq + ?Sized
     {
         self.inner.entry_ref(k).or_default()
-    }
-
-    pub fn inner(&self) -> &HashMap<K, V> {
-        &self.inner
     }
 }

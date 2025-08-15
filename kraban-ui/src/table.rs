@@ -1,120 +1,125 @@
-use ratatui::crossterm::event::{KeyCode, KeyEvent, KeyModifiers};
+use std::ops::Deref;
+
+use kraban_config::Config;
+use kraban_state::State;
 use ratatui::{
     buffer::Buffer,
+    crossterm::event::{KeyCode, KeyEvent, KeyModifiers},
     layout::{Constraint, Rect},
     style::{Style, Stylize},
     text::Line,
-    widgets::{self, Row, StatefulWidget, TableState, Widget},
+    widgets::{self, Row, StatefulWidget, TableState, Widget}
 };
-use std::fmt::Debug;
-use tap::{Pipe, Tap};
 
-use crate::{Component, Context, action::Action, keyhints::KeyHints};
+use crate::keyhints::Keyhints;
 
-pub const LARGE_COLUMN_SIZE: u16 = 10;
-pub const SMALL_COLUMN_SIZE: u16 = 6;
-
-macro_rules! table {
-    ($query:ty) => {
-        Table<$query, {<$query>::COLUMNS}>
-    };
-}
+macro_rules! table {(
+    $query:ident $(< $lt:lifetime >)?
+) => (
+    Table<$query $(<$lt>)?, { $query::COLUMNS }>
+)}
 
 pub(crate) use table;
 
-#[derive(Debug, Clone)]
 pub struct Table<Q, const COLUMNS: usize> {
     selected: TableState,
-    query: Q,
+    query: Q
 }
 
-impl<'a, Q: TableQuery<'a, COLUMNS>, const COLUMNS: usize> Table<Q, COLUMNS> {
-    pub fn new(idx: usize, query: Q) -> Self {
+impl<Q: Default, const COLUMNS: usize> Default for Table<Q, COLUMNS> {
+    fn default() -> Self {
         Self {
-            selected: TableState::default().with_selected(idx),
-            query,
+            selected: TableState::default(),
+            query: Q::default()
         }
-    }
-
-    pub fn selected(&self) -> Option<usize> {
-        self.selected.selected()
-    }
-
-    pub fn query(&self) -> &Q {
-        &self.query
     }
 }
 
-pub trait TableQuery<'a, const COLUMNS: usize>: Debug {
+impl<Q, const COLUMNS: usize> Deref for Table<Q, COLUMNS> {
+    type Target = Q;
+
+    fn deref(&self) -> &Self::Target { &self.query }
+}
+
+impl<Q: TableQuery<COLUMNS>, const COLUMNS: usize> Table<Q, COLUMNS> {
+    pub fn new(idx: usize, query: Q) -> Self {
+        let selected = TableState::new().with_selected(idx);
+        Self { selected, query }
+    }
+
+    pub fn selected(&self, state: &State, config: &Config) -> Option<usize> {
+        self.selected
+            .selected()
+            .min(self.query.len(state, config).checked_sub(1))
+    }
+}
+
+pub trait TableQuery<const COLUMNS: usize> {
     const COLUMNS: usize = COLUMNS;
-    fn header(&self) -> [&'static str; COLUMNS];
-    fn constraints(&self, context: Context) -> [Constraint; COLUMNS];
-    fn rows<'b>(&self, context: Context<'b, 'b>) -> impl Iterator<Item = [Line<'b>; COLUMNS]>;
-    fn on_key(
+    const CONSTRAINTS: [Constraint; COLUMNS];
+    fn rows<'a>(
         &self,
-        index: Option<usize>,
-        key_event: KeyEvent,
-        context: Context<'_, 'a>,
-    ) -> Option<Action<'a>>;
-    fn len(&self, context: Context) -> usize;
-    fn keyhints(&self, context: Context) -> KeyHints;
+        state: &'a State,
+        config: &'a Config
+    ) -> impl Iterator<Item = [Line<'a>; COLUMNS]>;
+    fn len(&self, state: &State, config: &Config) -> usize;
 }
 
-impl<'a, const COLUMNS: usize, Q> Component<'a> for Table<Q, COLUMNS>
+impl<const COLUMNS: usize, Q> Table<Q, COLUMNS>
 where
-    Q: TableQuery<'a, COLUMNS>,
+    Q: TableQuery<COLUMNS>
 {
-    fn on_key(&mut self, key_event: KeyEvent, context: Context<'_, 'a>) -> Option<Action<'a>> {
-        match (key_event.code, key_event.modifiers) {
-            (KeyCode::Up, KeyModifiers::NONE) => {
-                self.selected.select_previous();
-                None
-            }
-            (KeyCode::Down, KeyModifiers::NONE) => {
-                self.selected.select_next();
-                None
-            }
-            (KeyCode::Home, KeyModifiers::NONE) => {
-                self.selected.select_first();
-                None
-            }
-            (KeyCode::End, KeyModifiers::NONE) => {
-                self.selected.select_last();
-                None
-            }
+    pub fn on_key(&mut self, key: KeyEvent) {
+        let KeyEvent {
+            code,
+            modifiers: KeyModifiers::NONE,
+            ..
+        } = key
+        else {
+            return
+        };
 
-            _ => self
-                .query
-                .on_key(self.selected.selected(), key_event, context),
+        match code {
+            KeyCode::Up => self.selected.select_previous(),
+            KeyCode::Down => self.selected.select_next(),
+            KeyCode::Home => self.selected.select_first(),
+            KeyCode::End => self.selected.select_last(),
+            _ => {}
         }
     }
 
-    fn key_hints(&self, context: Context) -> KeyHints {
-        vec![
-            ("Up/Down", "Select previous/next"),
-            ("Home/End", "Go to start/end"),
-        ]
-        .tap_mut(|v| v.extend(self.query.keyhints(context)))
-    }
-
-    fn render(&mut self, area: Rect, buf: &mut Buffer, ctx: Context, focused: bool) {
-        let header = self.query.header().map(|s| s.dim().italic()).pipe(Row::new);
-        let widths = self.query.constraints(ctx);
-        let rows = self.query.rows(ctx).map(Row::new);
+    pub fn render(
+        &mut self,
+        area: Rect,
+        buf: &mut Buffer,
+        state: &State,
+        config: &Config,
+        focused: bool
+    ) {
+        let widths = Q::CONSTRAINTS;
+        let rows = self.query.rows(state, config).map(Row::new);
         let table = widgets::Table::new(rows, widths)
-            .header(header)
-            .column_spacing(1);
+            .column_spacing(1)
+            .row_highlight_style(Style::new().on_black())
+            .highlight_symbol(">");
 
-        match focused {
-            true => StatefulWidget::render(
-                table
-                    .row_highlight_style(Style::new().on_black())
-                    .highlight_symbol(">"),
-                area,
-                buf,
-                &mut self.selected,
-            ),
-            false => Widget::render(table, area, buf),
+        if self.selected.selected().is_none() {
+            self.selected.select(Some(0));
         }
+
+        if focused {
+            StatefulWidget::render(table, area, buf, &mut self.selected)
+        } else {
+            Widget::render(table, area, buf)
+        }
+    }
+}
+
+impl<const COLUMNS: usize, Q> Keyhints for Table<Q, COLUMNS> {
+    fn keyhints(&self, _: &State, _: &Config) -> impl IntoIterator<Item = (&str, &str)> {
+        [
+            ("Up/Down", "Select previous/next"),
+            ("Home/End", "Go to start/end")
+        ]
     }
 }

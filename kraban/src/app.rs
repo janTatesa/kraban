@@ -1,53 +1,49 @@
-use clap::ArgMatches;
-use cli_log::{debug, info};
+use cli_log::debug;
 use color_eyre::Result;
 use kraban_config::Config;
 use kraban_state::State;
-use kraban_ui::Ui;
-use kraban_ui::{Context, context};
-use ratatui::DefaultTerminal;
-use ratatui::crossterm::event::{self, Event, KeyCode, KeyEvent, KeyEventKind};
+use kraban_ui::{Response, Ui};
+use ratatui::{
+    DefaultTerminal,
+    crossterm::event::{self, Event, KeyEvent, KeyEventKind}
+};
 
 pub struct App<'a> {
     state: State,
-    running: bool,
-    is_testing: bool,
     ui: Ui<'a>,
     config: &'a Config,
-    terminal: DefaultTerminal,
+    terminal: DefaultTerminal
 }
 
 impl<'a> App<'a> {
-    pub fn run(config: &'a Config, cli: ArgMatches) -> Result<()> {
+    pub fn run(config: &'a Config) -> Result<()> {
         let terminal = ratatui::init();
-        let is_testing = *cli.get_one("testing").expect("Option has default value");
-        let state = State::new(is_testing)?;
+        let state = State::new(config)?;
         Self {
-            running: true,
             ui: Ui::default(),
-            is_testing,
             state,
             config,
-            terminal,
+            terminal
         }
         .main_loop()
     }
 
     fn main_loop(mut self) -> Result<()> {
-        while self.running {
-            if self.ui.in_main_view() {
-                self.state.compile_due_tasks_list(self.config);
-            }
-            self.terminal.draw(|frame| {
-                self.ui
-                    .redraw(frame.area(), frame.buffer_mut(), context!(self))
-            })?;
-            self.handle_crossterm_events()?;
+        self.terminal.draw(|frame| {
+            let area = frame.area();
+            let buf = frame.buffer_mut();
+            self.ui.render(area, buf, &self.state, self.config)
+        })?;
+
+        if let Some(mut app) = self.handle_crossterm_events()? {
+            app.state.save_if_needed()?;
+            return app.main_loop();
         }
+
         Ok(())
     }
 
-    fn handle_crossterm_events(&mut self) -> Result<()> {
+    fn handle_crossterm_events(mut self) -> Result<Option<Self>> {
         let event = event::read()?;
         debug!("{event:?}");
         match event {
@@ -55,31 +51,33 @@ impl<'a> App<'a> {
                 key @ KeyEvent {
                     kind: KeyEventKind::Press,
                     ..
-                },
-            ) => self.on_key(key)?,
-            Event::FocusGained => self.state = State::new(self.is_testing)?,
+                }
+            ) => return self.on_key(key),
+            Event::FocusGained => self.state = State::new(self.config)?,
             _ => {}
         }
-        Ok(())
+
+        Ok(Some(self))
     }
 
-    fn on_key(&mut self, key_event: KeyEvent) -> Result<()> {
-        if let KeyCode::Char('q') = key_event.code {
-            info!("Quiting");
-            self.running = false;
-            return Ok(());
-        }
+    fn on_key(self, key: KeyEvent) -> Result<Option<Self>> {
+        let App {
+            mut state,
+            ui,
+            config,
+            terminal
+        } = self;
 
-        self.on_non_quit_key(key_event)
-    }
-
-    fn on_non_quit_key(&mut self, key_event: KeyEvent) -> Result<()> {
-        let Some(action) = self.ui.get_action(key_event, context!(self)) else {
-            return Ok(());
+        let app = match ui.on_key(key, &mut state, config) {
+            Response::Quit => None,
+            Response::Update(ui) => Some(Self {
+                state,
+                ui,
+                config,
+                terminal
+            })
         };
 
-        let current_item = self.ui.current_item();
-        self.state.handle_action(current_item, action, self.config);
-        self.state.save(self.is_testing)
+        Ok(app)
     }
 }

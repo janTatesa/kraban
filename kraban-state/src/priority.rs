@@ -1,8 +1,6 @@
-use ratatui::{style::Color, text::Line};
+use kraban_config::Config;
 use serde::{Deserialize, Serialize};
 use strum_macros::{EnumCount, EnumIter, IntoStaticStr};
-
-use crate::Action;
 
 #[derive(
     Clone,
@@ -21,28 +19,9 @@ use crate::Action;
 pub enum Priority {
     Low,
     Medium,
-    High,
+    High
 }
 
-impl From<Priority> for Line<'_> {
-    fn from(value: Priority) -> Self {
-        let text: &str = value.into();
-        Self::styled(text, Color::from(value))
-    }
-}
-
-impl From<Priority> for Color {
-    fn from(value: Priority) -> Self {
-        match value {
-            Priority::Low => Self::Green,
-            Priority::Medium => Self::Yellow,
-            Priority::High => Self::Red,
-        }
-    }
-}
-
-impl From<Option<Priority>> for Action<'_> {
-    fn from(value: Option<Priority>) -> Self {
-        Self::ChangePriority(value)
-    }
+pub trait SetPriority {
+    fn set_priority(&mut self, priority: Option<Priority>, config: &Config);
 }

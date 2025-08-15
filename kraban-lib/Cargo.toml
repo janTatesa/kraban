@@ -18,5 +18,4 @@ chrono.workspace = true
 color-eyre.workspace = true
 strum_macros.workspace = true
 strum.workspace = true
-tap.workspace = true
-
+cli-log.workspace = true

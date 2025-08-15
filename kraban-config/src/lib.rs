@@ -1,38 +1,51 @@
 mod default;
 
+use std::{ops::Deref, path::PathBuf};
+
 use color_eyre::Result;
 use figment::{
     Figment,
-    providers::{Data, Toml},
+    providers::{Data, Toml}
 };
-
+use kraban_lib::{Dir, get_dir};
 use ratatui::style::Color;
 use serde::Deserialize;
-use tap::Tap;
-
-use kraban_lib::dir::{Dir, get_dir};
 
 #[derive(Debug)]
 pub struct Config {
     pub tabs: Vec<TabConfig>,
-    pub columns: Vec<ColumnConfig>,
     pub app_color: Color,
     pub collapse_unfocused_tabs: bool,
     pub show_key_hints: bool,
     pub always_open: AlwaysOpen,
-    pub default_due_dates: DefaultDueDates,
+    pub default_due_dates: DefaultDueDates
+}
+
+impl Config {
+    pub fn column_configs(&self) -> impl Iterator<Item = &ColumnConfig> {
+        self.tabs.iter().flat_map(|tab| tab.iter())
+    }
 }
 
 #[derive(Default, Debug)]
-pub struct TabConfig {
-    pub columns: Vec<ColumnConfig>,
+pub struct TabConfig(Vec<ColumnConfig>);
+impl Deref for TabConfig {
+    type Target = Vec<ColumnConfig>;
+
+    fn deref(&self) -> &Self::Target { &self.0 }
 }
 
-#[derive(Clone, Debug)]
+impl TabConfig {
+    pub fn get_column_idx(&self, column_name: &str) -> Option<usize> {
+        self.iter().position(|column| column.name == column_name)
+    }
+}
+
+#[derive(Clone, Debug, PartialEq, Eq)]
 pub struct ColumnConfig {
     pub name: String,
     pub color: Color,
-    pub done_column: bool,
+    pub done_column: bool
 }
 
 #[derive(Deserialize, Debug)]
@@ -41,14 +54,14 @@ pub struct DefaultDueDates {
     pub enable: bool,
     pub high: u16,
     pub medium: u16,
-    pub low: u16,
+    pub low: u16
 }
 
 #[derive(Deserialize, Clone, Copy, Debug)]
 pub struct AlwaysOpen {
     pub priority: bool,
     pub difficulty: bool,
-    pub due_date: bool,
+    pub due_date: bool
 }
 
 #[derive(Deserialize, Clone)]
@@ -58,7 +71,7 @@ struct ColumnRaw {
     color: Color,
     tab: usize,
     #[serde(default)]
-    done_column: bool,
+    done_column: bool
 }
 
 #[derive(Deserialize)]
@@ -70,13 +83,12 @@ struct ConfigRaw {
     collapse_unfocused_tabs: bool,
     show_key_hints: bool,
     always_open: AlwaysOpen,
-    default_due_dates: DefaultDueDates,
+    default_due_dates: DefaultDueDates
 }
 
 impl Config {
-    pub fn new(is_testing: bool) -> Result<Self> {
-        let path = get_dir(Dir::Config, is_testing)?.tap_mut(|p| p.push("kraban.toml"));
-
+    pub fn new() -> Result<Self> {
+        let path = path()?;
         let raw: ConfigRaw = Figment::new()
             .merge(Data::<Toml>::string(Self::DEFAULT))
             .merge(Data::<Toml>::file(path))
@@ -87,7 +99,7 @@ impl Config {
             collapse_unfocused_tabs,
             show_key_hints,
             default_due_dates,
-            always_open,
+            always_open
         } = raw;
 
         let columns = columns.into_iter().map(|column| {
@@ -96,28 +108,32 @@ impl Config {
                 ColumnConfig {
                     name: column.name,
                     color: column.color,
-                    done_column: column.done_column,
-                },
+                    done_column: column.done_column
+                }
             )
         });
 
-        let tabs = columns.clone().fold(Vec::new(), |mut tabs, (tab, column)| {
+        let tabs = columns.fold(Vec::new(), |mut tabs, (tab, column)| {
             if tab >= tabs.len() {
                 tabs.resize_with(tab + 1, TabConfig::default);
             }
-            tabs[tab].columns.push(column);
+            tabs[tab].0.push(column);
             tabs
         });
 
-        let columns = columns.map(|(_, column)| column).collect();
         Ok(Self {
             tabs,
             app_color,
-            columns,
             collapse_unfocused_tabs,
             show_key_hints,
             always_open,
-            default_due_dates,
+            default_due_dates
         })
     }
+}
+
+fn path() -> Result<PathBuf> {
+    let mut dir = get_dir(Dir::Config)?;
+    dir.push("kraban.toml");
+    Ok(dir)
 }

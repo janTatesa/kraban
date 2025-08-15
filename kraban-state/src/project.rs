@@ -1,12 +1,10 @@
-use core::panic;
-
-use crate::{Action, ItemToCreate, ReversedSortedVec};
-
-use super::{Column, Priority, State, defaultmap::DefaultMap};
 use derivative::Derivative;
-use kraban_lib::unwrap_or_ret;
+use kraban_config::{ColumnConfig, Config};
 use serde::{Deserialize, Serialize};
 use serde_with::skip_serializing_none;
+
+use super::Priority;
+use crate::{Columns, DueTask, SetPriority};
 
 #[derive(Derivative, Serialize, Deserialize, Default, Debug)]
 #[derivative(PartialEq, Eq, PartialOrd, Ord)]
@@ -20,39 +18,40 @@ pub struct Project {
     #[derivative(PartialEq = "ignore")]
     #[derivative(PartialOrd = "ignore")]
     #[derivative(Ord = "ignore")]
-    pub columns: DefaultMap<String, Column>,
+    pub columns: Columns
 }
 
-impl State {
-    pub fn projects(&self) -> &Vec<Project> {
-        self.projects.inner()
-    }
-
-    pub(super) fn handle_project_action(&mut self, action: Action, index: Option<usize>) {
-        let projects = &mut self.projects;
-        match action {
-            Action::Delete => _ = projects.remove(unwrap_or_ret!(index)),
-            Action::ChangePriority(priority) => {
-                change_priority(unwrap_or_ret!(index), projects, priority)
-            }
-            Action::New(ItemToCreate::Project(project)) => _ = self.projects.push(project),
-            Action::Rename(title) => rename(unwrap_or_ret!(index), projects, title),
-            action => panic!("Cannot perform {action:?} when in projects view"),
+impl Project {
+    pub fn new(title: String) -> Self {
+        Self {
+            title,
+            ..Default::default()
         }
     }
+
+    pub(crate) fn due_tasks_by_column<'a>(
+        &'a self,
+        column_config: &'a ColumnConfig,
+        idx_of_self: usize
+    ) -> impl Iterator<Item = DueTask<'a>> {
+        self.columns
+            .get(&column_config.name)
+            .iter()
+            .enumerate()
+            .filter_map(|(i, task)| Some((i, task, task.due_date()?)))
+            .map(move |(idx, task, due_date)| DueTask {
+                project: self,
+                column_config,
+                idx,
+                project_idx: idx_of_self,
+                priority: task.priority(),
+                due_date,
+                difficulty: task.difficulty,
+                title: &task.title
+            })
+    }
 }
 
-fn rename(index: usize, projects: &mut ReversedSortedVec<Project>, title: String) {
-    projects.map_item_at(index, |project| Project { title, ..project });
-}
-
-fn change_priority(
-    index: usize,
-    projects: &mut ReversedSortedVec<Project>,
-    priority: Option<Priority>,
-) {
-    projects.map_item_at(index, |project| Project {
-        priority,
-        ..project
-    });
+impl SetPriority for Project {
+    fn set_priority(&mut self, priority: Option<Priority>, _: &Config) { self.priority = priority }
 }

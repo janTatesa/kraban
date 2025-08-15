@@ -1,4 +1,6 @@
 use chrono::{Datelike, Local};
+use cli_log::error;
+use time::OffsetDateTime;
 
 pub type ChronoDate = chrono::DateTime<Local>;
 // hate that there's two crates which do not fully implement my use case but whathever
@@ -20,4 +22,11 @@ pub fn time_date_to_chrono_date(time_date: time::Date) -> ChronoDate {
         .unwrap()
         .with_day(day)
         .unwrap()
+}
+
+pub fn now() -> time::Date {
+    OffsetDateTime::now_local()
+        .inspect_err(|e| error!("Failed to get local timezone {e}, using utc"))
+        .unwrap_or(OffsetDateTime::now_utc())
+        .date()
 }

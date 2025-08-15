@@ -1,100 +1,96 @@
-use std::{borrow::Cow, mem};
-
-use kraban_state::CurrentItem;
-use ratatui::crossterm::event::{KeyCode, KeyEvent};
+use kraban_config::Config;
+use kraban_state::State;
 use ratatui::{
     buffer::Buffer,
+    crossterm::event::{KeyCode, KeyEvent, KeyModifiers},
     layout::Rect,
     style::{Style, Stylize},
-    widgets::Widget,
+    widgets::Widget
 };
-use tap::Tap;
 use tui_textarea::{CursorMove, TextArea};
 
-use crate::{
-    Component, Context, StateAction,
-    action::{Action, state_action},
-    keyhints::KeyHints,
-};
-
-use super::{DEFAULT_WIDTH, PromptTrait};
+use super::Prompt;
+use crate::keyhints::Keyhints;
 
 #[derive(Debug)]
 pub struct InputPrompt {
     text_area: TextArea<'static>,
-    input_action: InputAction,
+    input_action: InputAction
 }
 
 #[derive(strum_macros::Display, Debug)]
 pub enum InputAction {
     Rename,
-    New,
+    New
+}
+
+#[allow(clippy::large_enum_variant)]
+pub enum Response {
+    Update(InputPrompt),
+    New(String),
+    Rename(String)
 }
 
 impl InputPrompt {
-    pub fn new(context: Context, input_action: InputAction, text: String) -> Self {
-        let text_area = match input_action {
+    pub fn new(config: &Config, input_action: InputAction, text: String) -> Self {
+        let mut text_area = match input_action {
             InputAction::Rename => {
-                TextArea::new(vec![text]).tap_mut(|t| t.move_cursor(CursorMove::End))
+                let mut text = TextArea::new(vec![text]);
+                text.move_cursor(CursorMove::End);
+                text
             }
-            InputAction::New => TextArea::default().tap_mut(|t| t.set_placeholder_text(text)),
-        }
-        .tap_mut(|t| {
-            t.set_selection_style(Style::new().fg(context.config.app_color).reversed());
-            t.set_cursor_line_style(Style::new());
-        });
+            InputAction::New => {
+                let mut text_area = TextArea::default();
+                text_area.set_placeholder_text(text);
+                text_area
+            }
+        };
+
+        let style = Style::new().fg(config.app_color).reversed();
+        text_area.set_selection_style(style);
+        text_area.set_cursor_line_style(Style::new());
 
         Self {
             text_area,
-            input_action,
+            input_action
         }
     }
 
-    fn current_line_owned(&mut self) -> String {
-        mem::take(&mut self.text_area)
-            .into_lines()
-            .into_iter()
-            .next()
-            .unwrap()
-    }
-}
-
-impl PromptTrait for InputPrompt {
-    fn height(&self, _context: Context) -> u16 {
-        1
-    }
-
-    fn title(&self, item: CurrentItem) -> Cow<'static, str> {
-        let item: &str = item.as_ref();
-        format!("{} {item}", self.input_action).into()
-    }
-
-    fn width(&self) -> u16 {
-        DEFAULT_WIDTH
-    }
-}
-
-impl Component<'_> for InputPrompt {
-    fn on_key(&mut self, key_event: KeyEvent, _context: Context) -> Option<Action<'static>> {
-        match key_event.code {
-            KeyCode::Enter if !self.text_area.is_empty() => match self.input_action {
-                InputAction::Rename => state_action(StateAction::Rename(self.current_line_owned())),
-                InputAction::New => Some(Action::New(self.current_line_owned())),
-            },
-
-            KeyCode::Enter => None,
-            _ => {
-                self.text_area.input(key_event);
-                None
+    pub fn on_key(mut self, key: KeyEvent) -> Response {
+        if let KeyEvent {
+            code: KeyCode::Enter,
+            modifiers: KeyModifiers::NONE,
+            ..
+        } = key
+        {
+            let text = self.text_area.into_lines().remove(0);
+            return match self.input_action {
+                InputAction::New => Response::New(text),
+                InputAction::Rename => Response::Rename(text)
             }
         }
+
+        self.text_area.input(key);
+        Response::Update(self)
+    }
+}
+
+impl Prompt for InputPrompt {
+    fn height(&self, _: &State, _: &Config) -> u16 { 1 }
+    fn title(&self) -> &'static str {
+        match self.input_action {
+            InputAction::Rename => "Rename item",
+            InputAction::New => "New item"
+        }
     }
 
-    fn key_hints(&self, _context: Context) -> KeyHints {
-        vec![("Enter", "Submit"), ("Other", "Consult readme")]
-    }
-
-    fn render(&mut self, area: Rect, buf: &mut Buffer, _context: Context, _focused: bool) {
+    fn render(&mut self, area: Rect, buf: &mut Buffer, _: &State, _: &Config) {
         self.text_area.render(area, buf)
+    }
+}
+
+impl Keyhints for InputPrompt {
+    fn keyhints(&self, _: &State, _: &Config) -> impl IntoIterator<Item = (&str, &str)> {
+        [("Enter", "Submit"), ("Other", "Consult readme")]
     }
 }

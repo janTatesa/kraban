@@ -40,6 +40,7 @@
     {
       overlays.default = final: prev: {
         rustToolchain = prev.rust-bin.fromRustupToolchainFile ./rust-toolchain.toml;
+        rustfmt = prev.lib.hiPrio prev.rust-bin.nightly.latest.rustfmt;
       };
 
       devShells = forEachSupportedSystem (
@@ -47,6 +48,8 @@
         {
           default = pkgs.mkShell {
             packages = with pkgs; [
+              rustfmt
+              cargo-expand
               rustToolchain
               openssl
               pkg-config
@@ -56,10 +59,9 @@
               rust-analyzer
               lldb
             ];
-            env = {
-              KRABAN_LOG = "info";
-              KRABAN_TESTING = "true";
-            };
+
+            env.KRABAN_LOG = "info";
+
           };
         }
       );

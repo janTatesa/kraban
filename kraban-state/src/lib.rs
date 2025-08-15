@@ -10,74 +10,70 @@ mod task;
 
 use std::{fs, io::ErrorKind, path::PathBuf};
 
-use kraban_config::Config;
-use kraban_lib::dir::{Dir, get_dir};
-
 use color_eyre::Result;
-use serde::{Deserialize, Serialize};
-use serde_json::{Value, json};
-use tap::Tap;
-use time::Date;
-
 pub use difficulty::Difficulty;
 pub use due_task::DueTask;
-pub use priority::Priority;
+use kraban_config::Config;
+use kraban_lib::{Dir, get_dir};
+pub use priority::{Priority, SetPriority};
 pub use project::Project;
+use serde::{Deserialize, Serialize};
+use serde_json::{Value, json};
 pub use sorted_vec::ReversedSortedVec;
 pub use task::Task;
 
-type Column = ReversedSortedVec<Task>;
+use crate::defaultmap::DefaultMap;
+
+pub type Columns = DefaultMap<String, Column>;
+pub type Column = ReversedSortedVec<Task>;
+pub type Projects = ReversedSortedVec<Project>;
 #[derive(Serialize, Deserialize, Default, Debug)]
 pub struct State {
-    projects: ReversedSortedVec<Project>,
-    due_tasks: Option<ReversedSortedVec<DueTask>>,
+    projects: Projects,
+    #[serde(skip)]
+    should_save: bool
 }
 
 impl State {
-    pub fn new(is_testing: bool) -> Result<Self> {
+    pub fn new(config: &Config) -> Result<Self> {
         let mut value: Value = serde_json::from_str(
-            match fs::read_to_string(path_to_state_file(is_testing)?) {
+            match fs::read_to_string(path()?) {
                 Ok(contents) => contents,
                 Err(error) if error.kind() == ErrorKind::NotFound => return Ok(Self::default()),
-                error => error?,
+                error => error?
             }
-            .as_str(),
+            .as_str()
         )?;
+
         if value.is_null() {
             return Ok(Self::default());
         }
+
         let version = value["version"].as_u64().unwrap_or(Self::BASILK_VERSION);
         let state = match version {
             Self::BASILK_VERSION => value,
-            _ => value["state"].take(),
+            _ => value["state"].take()
         };
 
-        Self::from_version(version, state)
+        Self::from_version(version, state, config)
     }
 
-    pub fn save(&self, is_testing: bool) -> Result<()> {
-        let json = json!({"version": Self::CURRENT_VERSION, "state": self});
-        fs::write(
-            path_to_state_file(is_testing)?,
-            serde_json::to_string(&json)?,
-        )?;
+    pub fn save_if_needed(&mut self) -> Result<()> {
+        if self.should_save {
+            let json = json!({"version": Self::CURRENT_VERSION, "state": self});
+            let contents = serde_json::to_string(&json)?;
+            let path = path()?;
+            fs::write(path, contents)?;
+            self.should_save = false;
+        }
+
         Ok(())
     }
 
-    pub fn handle_action(&mut self, current_list: CurrentItem, action: Action, config: &Config) {
-        match current_list {
-            CurrentItem::Project(index) => self.handle_project_action(action, index),
-            CurrentItem::Task {
-                project,
-                column,
-                task: index,
-            } => self.handle_task_action(action, project, column, index, config),
-            CurrentItem::DueTask(_) => todo!(),
-        };
-
-        // The list might have been changed
-        // TODO: Set it to none only when it actually changes
-        self.due_tasks = None;
+    pub fn projects(&self) -> &Projects { &self.projects }
+    pub fn projects_mut(&mut self) -> &mut Projects {
+        self.should_save = true;
+        &mut self.projects
     }
 }
 
@@ -89,27 +85,12 @@ pub enum CurrentItem<'a> {
     Task {
         project: usize,
         column: &'a str,
-        task: Option<usize>,
-    },
+        task: Option<usize>
+    }
 }
 
-fn path_to_state_file(is_testing: bool) -> Result<PathBuf> {
-    Ok(get_dir(Dir::State, is_testing)?.tap_mut(|p| p.push("tasks.json")))
-}
-
-#[derive(Debug)]
-pub enum Action<'a> {
-    Delete,
-    ChangePriority(Option<Priority>),
-    ChangeDifficulty(Option<Difficulty>),
-    New(ItemToCreate),
-    Rename(String),
-    MoveToColumn(&'a str),
-    SetTaskDueDate(Option<Date>),
-}
-
-#[derive(Debug)]
-pub enum ItemToCreate {
-    Task(Task),
-    Project(Project),
+fn path() -> Result<PathBuf> {
+    let mut path = get_dir(Dir::State)?;
+    path.push("tasks.json");
+    Ok(path)
 }

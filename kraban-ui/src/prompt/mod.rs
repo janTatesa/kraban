@@ -1,29 +1,34 @@
-mod delete;
-mod due_date;
-mod enum_prompt;
-mod input;
-mod move_to_column;
+pub mod delete;
+pub mod difficulty;
+pub mod due_date;
+pub mod input;
+pub mod move_to_column;
+pub mod priority;
 
-use std::borrow::Cow;
-
-use crate::{Context, action::Action, keyhints::KeyHints};
-
-use super::Component;
-pub use delete::DeleteConfirmation;
-pub use due_date::DueDatePrompt;
 use enum_dispatch::enum_dispatch;
-pub use enum_prompt::{difficulty::DifficultyPrompt, priority::PriorityPrompt};
-pub use input::{InputAction, InputPrompt};
-use kraban_state::CurrentItem;
-pub use move_to_column::MoveToColumnPrompt;
-use ratatui::crossterm::event::KeyEvent;
-
+use kraban_config::Config;
+use kraban_state::{Project, State, Task};
 use ratatui::{
     buffer::Buffer,
     layout::{Constraint, Flex, Layout, Rect},
+    style::{Style, Stylize},
+    text::Line,
+    widgets::{Clear, Widget}
 };
 
-pub fn center_area(area: Rect, horizontal: Constraint, vertical: Constraint) -> Rect {
+use crate::{
+    prompt::{
+        delete::{ProjectDeleteConfirmation, TaskDeleteConfirmation},
+        difficulty::DifficultyPrompt,
+        due_date::DueDatePrompt,
+        input::InputPrompt,
+        move_to_column::MoveToColumnPrompt,
+        priority::PriorityPrompt
+    },
+    utils::block_widget
+};
+
+fn center_area(area: Rect, horizontal: Constraint, vertical: Constraint) -> Rect {
     let [area] = Layout::horizontal([horizontal])
         .flex(Flex::Center)
         .areas(area);
@@ -31,23 +36,52 @@ pub fn center_area(area: Rect, horizontal: Constraint, vertical: Constraint) -> 
     area
 }
 
-const DEFAULT_WIDTH: u16 = 60;
 #[enum_dispatch]
-pub(crate) trait PromptTrait {
-    fn height(&self, context: Context) -> u16;
-    fn width(&self) -> u16;
-    fn title(&self, item: CurrentItem) -> Cow<'static, str>;
+trait Prompt {
+    fn height(&self, state: &State, config: &Config) -> u16;
+    fn width(&self) -> u16 { 60 }
+    fn title(&self) -> &'static str;
+    fn render(&mut self, area: Rect, buf: &mut Buffer, state: &State, config: &Config);
 }
 
-#[allow(clippy::enum_variant_names)]
+#[allow(private_bounds)]
+pub fn render_prompt<T: Prompt>(
+    prompt: &mut T,
+    area: Rect,
+    buf: &mut Buffer,
+    state: &State,
+    config: &Config
+) {
+    buf.set_style(area, Style::default().dim());
+    let prompt_area = center_area(
+        area,
+        Constraint::Length(prompt.width() + 2),
+        Constraint::Length(prompt.height(state, config) + 2)
+    );
+
+    Clear.render(prompt_area, buf);
+    let title = Line::from(prompt.title()).centered();
+    let block = block_widget(config).title(title);
+    let inner_prompt_area = block.inner(prompt_area);
+    block.render(prompt_area, buf);
+    prompt.render(inner_prompt_area, buf, state, config);
+}
+
 #[allow(clippy::large_enum_variant)]
-#[enum_dispatch(PromptTrait, Component)]
-#[derive(Debug)]
-pub(crate) enum Prompt<'a> {
-    DeleteConfirmation(DeleteConfirmation<'a>),
-    DueDatePrompt,
-    PriorityPrompt,
-    DifficultyPrompt,
+#[enum_dispatch(Prompt)]
+pub enum ProjectsPrompt {
     InputPrompt,
-    MoveToColumn(MoveToColumnPrompt<'a>),
+    PriorityPrompt(PriorityPrompt<Project>),
+    ProjectDeleteConfirmation
+}
+
+#[allow(clippy::large_enum_variant)]
+#[enum_dispatch(Prompt)]
+pub enum TasksPrompt<'a> {
+    InputPrompt,
+    PriorityPrompt(PriorityPrompt<Task>),
+    DifficultyPrompt,
+    DueDatePrompt,
+    MoveToColumnPrompt(MoveToColumnPrompt<'a>),
+    TaskDeleteConfirmation(TaskDeleteConfirmation<'a>)
 }

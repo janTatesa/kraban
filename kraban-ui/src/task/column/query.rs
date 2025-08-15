@@ -1,110 +1,64 @@
-use kraban_state::CurrentItem;
-use ratatui::crossterm::event::{KeyCode, KeyEvent};
+use kraban_config::Config;
+use kraban_lib::now;
+use kraban_state::{State, Task};
 use ratatui::{layout::Constraint, text::Line};
+use time::Date;
 
 use crate::{
-    Context, KeyNoModifiers,
-    action::{Action, open_prompt},
-    date_to_line, get,
-    keyhints::KeyHints,
-    no_property,
-    prompt::{
-        DeleteConfirmation, DifficultyPrompt, DueDatePrompt, InputAction, InputPrompt,
-        MoveToColumnPrompt, PriorityPrompt,
-    },
-    table::{LARGE_COLUMN_SIZE, SMALL_COLUMN_SIZE, TableQuery},
+    table::TableQuery,
+    utils::{
+        DIFFICULTY_CONSTRAINT, DUE_DATE_CONSTRAINT, PRIORITY_CONSTRAINT, difficulty_to_line,
+        due_date_to_line, priority_to_line
+    }
 };
 
 #[derive(Debug, Clone)]
 pub struct TaskTable<'a> {
-    pub project_index: usize,
-    pub column: &'a str,
-    pub immutable: bool,
+    project_idx: usize,
+    column: &'a str
 }
 
-impl<'a> TableQuery<'a, 4> for TaskTable<'a> {
-    fn on_key(
-        &self,
-        index: Option<usize>,
-        key: KeyEvent,
-        context: Context<'_, 'a>,
-    ) -> Option<Action<'a>> {
-        let key = key.keycode_without_modifiers()?;
-        let current_task =
-            index.map(|idx| get!(context, projects, self.project_index, self.column, idx));
-        match key {
-            KeyCode::Enter => open_prompt(MoveToColumnPrompt::new(self.column)),
-            _ if self.immutable => None,
-            KeyCode::Delete | KeyCode::Backspace => {
-                open_prompt(DeleteConfirmation(CurrentItem::Task {
-                    project: self.project_index,
-                    column: self.column,
-                    task: index,
-                }))
-            }
-            KeyCode::Char('p') => open_prompt(PriorityPrompt::new(current_task?.priority)),
-            KeyCode::Char('d') => open_prompt(DifficultyPrompt::new(current_task?.difficulty)),
-            KeyCode::Char('r') => open_prompt(InputPrompt::new(
-                context,
-                InputAction::Rename,
-                current_task?.title.clone(),
-            )),
-            KeyCode::Char('a') => open_prompt(DueDatePrompt::new(current_task?.due_date)),
-            KeyCode::Char('n') => open_prompt(InputPrompt::new(
-                context,
-                InputAction::New,
-                "Enter new task name".to_string(),
-            )),
-            _ => None,
+impl<'a> TaskTable<'a> {
+    pub fn new(project_idx: usize, column: &'a str) -> Self {
+        Self {
+            project_idx,
+            column
         }
     }
+}
 
-    fn keyhints(&self, _context: Context) -> KeyHints {
-        let mut base = vec![("Enter", "Move task to column")];
-        if self.immutable {
-            base.extend([
-                ("Delete/Backspace", "Delete"),
-                ("n", "New"),
-                ("p", "Set priority"),
-                ("d", "Set difficulty"),
-                ("r", "Rename"),
-                ("a", "Add due date"),
-            ]);
-        }
-        base
+impl TableQuery<4> for TaskTable<'_> {
+    fn len(&self, state: &State, _: &Config) -> usize {
+        state.projects()[self.project_idx]
+            .columns
+            .get(self.column)
+            .len()
     }
 
-    fn len(&self, context: Context) -> usize {
-        get!(context, projects, self.project_index, self.column).len()
-    }
+    const CONSTRAINTS: [Constraint; 4] = [
+        PRIORITY_CONSTRAINT,
+        DIFFICULTY_CONSTRAINT,
+        DUE_DATE_CONSTRAINT,
+        Constraint::Min(0)
+    ];
 
-    fn header(&self) -> [&'static str; 4] {
-        ["Prior.", "Diffi.", "Due date", "Name"]
-    }
-
-    fn constraints(&self, _context: Context) -> [Constraint; 4] {
-        [
-            Constraint::Length(SMALL_COLUMN_SIZE),
-            Constraint::Length(SMALL_COLUMN_SIZE),
-            Constraint::Length(LARGE_COLUMN_SIZE),
-            Constraint::Min(0),
-        ]
-    }
-
-    fn rows<'b>(&self, context: Context<'b, 'b>) -> impl Iterator<Item = [Line<'b>; 4]> {
-        get!(context, projects, self.project_index, self.column)
+    fn rows<'a>(&self, state: &'a State, _: &'a Config) -> impl Iterator<Item = [Line<'a>; 4]> {
+        let now = now();
+        state.projects()[self.project_idx]
+            .columns
+            .get(self.column)
             .iter()
-            .map(|task| {
-                [
-                    task.priority
-                        .map(|priority| priority.into())
-                        .unwrap_or(no_property()),
-                    task.difficulty
-                        .map(|difficulty| difficulty.into())
-                        .unwrap_or(no_property()),
-                    task.due_date.map(date_to_line).unwrap_or(no_property()),
-                    task.title.as_str().into(),
-                ]
-            })
+            .map(move |task| task_row(now, task))
     }
+}
+
+fn task_row(now: Date, task: &Task) -> [Line<'_>; 4] {
+    [
+        task.priority().map(priority_to_line).unwrap_or_default(),
+        task.difficulty.map(difficulty_to_line).unwrap_or_default(),
+        task.due_date()
+            .map(|date| due_date_to_line(date, now))
+            .unwrap_or_default(),
+        task.title.as_str().into()
+    ]
 }

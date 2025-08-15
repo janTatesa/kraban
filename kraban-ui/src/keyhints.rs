@@ -1,42 +1,85 @@
+use std::iter;
+
+use kraban_config::Config;
+use kraban_state::State;
 use ratatui::{
-    style::{Style, Styled},
-    text::{Line, Span, Text},
+    style::{Style, Styled, Stylize},
+    text::{Line, Span, Text}
 };
 
-pub type KeyHints = Vec<(&'static str, &'static str)>;
-pub struct KeyHintsWidget {
-    pub hints: KeyHints,
-    pub keybinding_style: Style,
-    pub hint_style: Style,
-}
+use crate::{ProjectsPrompt, TasksPrompt, Ui, UiState, main_view::MainViewFocus};
 
-impl KeyHintsWidget {
-    pub fn into_text(self, width: u16) -> Text<'static> {
-        let hints = self.hints.iter().map(|(keybinding, hint)| {
+fn keyhints_to_text<'a, T: Keyhints>(
+    hints: &'a T,
+    width: u16,
+    state: &State,
+    config: &Config
+) -> Text<'a> {
+    let keybinding_style = Style::new().bold().fg(config.app_color);
+    let hint_style = Style::new().reset().italic();
+    let hints = iter::once(("Ctrl-q", "Quit"))
+        .chain(hints.keyhints(state, config))
+        .map(|(keybinding, hint)| {
             (
-                keybinding.set_style(self.keybinding_style),
-                format!(": {hint}").set_style(self.hint_style),
+                keybinding.set_style(keybinding_style),
+                format!(": {hint}").set_style(hint_style)
             )
         });
 
-        // TODO: make this more declaractive
-        let mut lines = vec![Line::default().centered()];
-        let mut length = 0;
-        for (keybinding, hint) in hints {
-            let key_hint_length = keybinding.content.len() + hint.content.len() + 1;
-            if length + key_hint_length > width.into() {
-                lines.last_mut().unwrap().spans.pop();
-                lines.push(Line::default().centered());
-                length = 0;
-            }
-            length += key_hint_length;
-            lines
-                .last_mut()
-                .unwrap()
-                .extend([keybinding, hint, Span::raw(" ")]);
+    // TODO: make this more declaractive
+    let mut text: Text = Line::default().centered().into();
+    let mut length = 0;
+    for (keybinding, hint) in hints {
+        let key_hint_length = keybinding.content.len() + hint.content.len() + 1;
+        if length + key_hint_length > width.into() {
+            text.lines.last_mut().unwrap().spans.pop();
+            text.lines.push(Line::default().centered());
+            length = 0;
         }
 
-        lines.last_mut().unwrap().spans.pop();
-        Text::from(lines)
+        length += key_hint_length;
+        text.lines
+            .last_mut()
+            .unwrap()
+            .extend([keybinding, hint, Span::raw(" ")]);
+    }
+
+    text.lines.last_mut().unwrap().spans.pop();
+    text
+}
+
+pub trait Keyhints {
+    fn keyhints(&self, state: &State, config: &Config) -> impl IntoIterator<Item = (&str, &str)>;
+}
+
+macro_rules! keyhints {
+    ($self:expr, $width:expr, $state:expr, $config:expr, $hints_ident:ident, $($pat:pat,)*) => {
+        match &$self.0 {
+            $($pat => keyhints_to_text($hints_ident, $width, $state, $config),)*
+        }
+    };
+}
+
+impl Ui<'_> {
+    pub(crate) fn keyhints(&self, width: u16, state: &State, config: &Config) -> Text<'_> {
+        keyhints!(
+            self,
+            width,
+            state,
+            config,
+            hints,
+            UiState::MainView(hints, _, MainViewFocus::Projects),
+            UiState::MainView(_, hints, MainViewFocus::DueTasks),
+            UiState::ProjectsPrompt(_, _, ProjectsPrompt::InputPrompt(hints)),
+            UiState::TasksPrompt(_, TasksPrompt::InputPrompt(hints)),
+            UiState::ProjectsPrompt(_, _, ProjectsPrompt::PriorityPrompt(hints)),
+            UiState::TasksPrompt(_, TasksPrompt::PriorityPrompt(hints)),
+            UiState::ProjectsPrompt(_, _, ProjectsPrompt::ProjectDeleteConfirmation(hints)),
+            UiState::TasksView(hints),
+            UiState::TasksPrompt(_, TasksPrompt::DifficultyPrompt(hints)),
+            UiState::TasksPrompt(_, TasksPrompt::DueDatePrompt(hints)),
+            UiState::TasksPrompt(_, TasksPrompt::MoveToColumnPrompt(hints)),
+            UiState::TasksPrompt(_, TasksPrompt::TaskDeleteConfirmation(hints)),
+        )
     }
 }

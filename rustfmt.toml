@@ -1,0 +1,9 @@
+use_field_init_shorthand = true
+format_macro_matchers = true
+group_imports = "StdExternalCrate"
+imports_granularity = "Crate"
+trailing_comma = "Never"
+trailing_semicolon = false
+condense_wildcard_suffixes = true
+edition = "2024"
+fn_single_line = true
