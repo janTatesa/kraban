@@ -87,10 +87,6 @@ impl Keyhints for DifficultyPrompt {
     fn keyhints(&self, state: &State, config: &Config) -> impl IntoIterator<Item = (&str, &str)> {
         chain![
             self.list.keyhints(state, config),
-            Difficulty::iter().map(|difficulty| {
-                let str: &str = difficulty.into();
-                (&str[0..1], str)
-            }),
             iter::once(("Backspace", "None"))
         ]
     }

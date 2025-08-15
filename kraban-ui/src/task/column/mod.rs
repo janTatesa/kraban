@@ -28,7 +28,6 @@ use crate::{
 
 pub struct ColumnView<'a> {
     color: Color,
-    immutable: bool,
     column: &'a str,
     project_idx: usize,
     table: table!(TaskTable<'a>)
@@ -36,14 +35,12 @@ pub struct ColumnView<'a> {
 
 impl<'a> ColumnView<'a> {
     pub fn new(project_idx: usize, column: &'a ColumnConfig, task: usize) -> Self {
-        let immutable = column.done_column;
         let color = column.color;
         let column = &column.name;
         let table = Table::new(task, TaskTable::new(project_idx, column));
 
         Self {
             color,
-            immutable,
             table,
             project_idx,
             column
@@ -102,10 +99,6 @@ impl<'a> ColumnView<'a> {
                 prompt(InputPrompt::new(config, InputAction::New, placeholder))
             }
             (KeyCode::Enter, Some(_)) => prompt(MoveToColumnPrompt::new(self.column)),
-            _ if self.immutable => {
-                self.table.on_key(key);
-                None
-            }
             (KeyCode::Delete | KeyCode::Backspace, Some(_)) => prompt(TaskDeleteConfirmation::new(
                 self.project_idx,
                 self.column,
@@ -135,27 +128,22 @@ fn prompt<'a, T: Into<TasksPrompt<'a>>>(prompt: T) -> Option<TasksPrompt<'a>> {
 
 impl Keyhints for ColumnView<'_> {
     fn keyhints(&self, state: &State, config: &Config) -> impl IntoIterator<Item = (&str, &str)> {
-        const TASK_REQUIRING_MUTABLE_KEYHINTS: [(&str, &str); 5] = [
+        const TASK_REQUIRING_KEYHINTS: [(&str, &str); 6] = [
             ("Delete/Backspace", "Delete"),
             ("p", "Set priority"),
             ("d", "Set difficulty"),
             ("r", "Rename"),
-            ("a", "Add due date")
+            ("a", "Add due date"),
+            ("Enter", "Move task to column")
         ];
 
-        let iter_requiring_task = chain!(
-            iter::once(("Enter", "Move task to column")),
-            (!self.immutable)
-                .then_some(TASK_REQUIRING_MUTABLE_KEYHINTS)
-                .into_iter()
-                .flatten(),
-            self.table.keyhints(state, config)
-        );
-
         chain![
-            (!self.immutable).then_some(("n", "New")),
+            iter::once(("n", "New")),
             (self.table.len(state, config) != 0)
-                .then_some(iter_requiring_task)
+                .then_some(chain![
+                    TASK_REQUIRING_KEYHINTS,
+                    self.table.keyhints(state, config)
+                ])
                 .into_iter()
                 .flatten()
         ]

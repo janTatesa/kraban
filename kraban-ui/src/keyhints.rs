@@ -1,5 +1,3 @@
-use std::iter;
-
 use kraban_config::Config;
 use kraban_state::State;
 use ratatui::{
@@ -9,22 +7,19 @@ use ratatui::{
 
 use crate::{ProjectsPrompt, TasksPrompt, Ui, UiState, main_view::MainViewFocus};
 
-fn keyhints_to_text<'a, T: Keyhints>(
-    hints: &'a T,
+fn keyhints_to_text<'a>(
+    hints: impl Iterator<Item = (&'a str, &'a str)>,
     width: u16,
-    state: &State,
     config: &Config
 ) -> Text<'a> {
     let keybinding_style = Style::new().bold().fg(config.app_color);
     let hint_style = Style::new().reset().italic();
-    let hints = iter::once(("Ctrl-q", "Quit"))
-        .chain(hints.keyhints(state, config))
-        .map(|(keybinding, hint)| {
-            (
-                keybinding.set_style(keybinding_style),
-                format!(": {hint}").set_style(hint_style)
-            )
-        });
+    let hints = hints.map(|(keybinding, hint)| {
+        (
+            keybinding.set_style(keybinding_style),
+            format!(": {hint}").set_style(hint_style)
+        )
+    });
 
     // TODO: make this more declaractive
     let mut text: Text = Line::default().centered().into();
@@ -53,21 +48,28 @@ pub trait Keyhints {
 }
 
 macro_rules! keyhints {
-    ($self:expr, $width:expr, $state:expr, $config:expr, $hints_ident:ident, $($pat:pat,)*) => {
+    ($self:expr, $width:expr, $state:expr, $config:expr, $hints_ident:ident, $extra_hints:expr, $($pat:pat,)*) => {
         match &$self.0 {
-            $($pat => keyhints_to_text($hints_ident, $width, $state, $config),)*
+            $($pat => keyhints_to_text($hints_ident.keyhints($state, $config).into_iter().chain($extra_hints), $width, $config),)*
         }
     };
 }
 
 impl Ui<'_> {
-    pub(crate) fn keyhints(&self, width: u16, state: &State, config: &Config) -> Text<'_> {
+    pub(crate) fn keyhints<'a>(
+        &'a self,
+        extra_hints: impl IntoIterator<Item = (&'a str, &'a str)>,
+        width: u16,
+        state: &State,
+        config: &Config
+    ) -> Text<'a> {
         keyhints!(
             self,
             width,
             state,
             config,
             hints,
+            extra_hints,
             UiState::MainView(hints, _, MainViewFocus::Projects),
             UiState::MainView(_, hints, MainViewFocus::DueTasks),
             UiState::ProjectsPrompt(_, _, ProjectsPrompt::InputPrompt(hints)),

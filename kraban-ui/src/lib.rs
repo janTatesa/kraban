@@ -88,6 +88,17 @@ impl<'a> Ui<'a> {
                     }
                 }
             }
+            UiState::ProjectsPrompt(projects, due_tasks, ..)
+                if key.code == KeyCode::Esc && key.modifiers == KeyModifiers::NONE =>
+            {
+                UiState::MainView(projects, due_tasks, MainViewFocus::Projects)
+            }
+            UiState::TasksPrompt(tasks_view, ..)
+                if key.code == KeyCode::Esc && key.modifiers == KeyModifiers::NONE =>
+            {
+                UiState::TasksView(tasks_view)
+            }
+
             UiState::ProjectsPrompt(projects, due_tasks, ProjectsPrompt::InputPrompt(prompt)) => {
                 match prompt.on_key(key) {
                     input::Response::Update(prompt) => {

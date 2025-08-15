@@ -1,3 +1,6 @@
+use std::iter;
+
+use itertools::chain;
 use kraban_config::Config;
 use kraban_state::State;
 use ratatui::{
@@ -30,10 +33,18 @@ impl<'a> Ui<'a> {
     }
 
     pub fn render(&mut self, area: Rect, buf: &mut Buffer, state: &State, config: &Config) {
+        let extra_hints = chain![
+            iter::once(("Ctrl-q", "Quit")),
+            matches!(
+                self.0,
+                UiState::ProjectsPrompt(..) | UiState::TasksPrompt(..),
+            )
+            .then_some(("Esc", "Exit prompt"))
+        ];
+
         let keyhints = config
             .show_key_hints
-            .then(|| self.keyhints(area.width, state, config));
-
+            .then(|| self.keyhints(extra_hints, area.width, state, config));
         let main_area = match keyhints {
             Some(keyhints) => {
                 let layout: [_; 2] = Layout::vertical([

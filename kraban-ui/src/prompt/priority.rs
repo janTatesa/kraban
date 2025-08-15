@@ -89,10 +89,6 @@ impl<T> Keyhints for PriorityPrompt<T> {
     fn keyhints(&self, state: &State, config: &Config) -> impl IntoIterator<Item = (&str, &str)> {
         chain![
             self.list.keyhints(state, config),
-            Priority::iter().map(|priority| {
-                let str: &str = priority.into();
-                (&str[0..1], str)
-            }),
             iter::once(("Backspace", "None"))
         ]
     }

@@ -1,5 +1,3 @@
-use std::fmt::Display;
-
 use kraban_config::Config;
 use kraban_state::State;
 use ratatui::{
@@ -12,14 +10,6 @@ use ratatui::{
 
 use crate::{table::TableQuery, task::column::ColumnView};
 
-fn optional_text(display: impl Display, condition: bool) -> String {
-    if condition {
-        format!(" ({display})")
-    } else {
-        String::default()
-    }
-}
-
 impl<'a> ColumnView<'a> {
     pub fn render(
         &mut self,
@@ -30,20 +20,19 @@ impl<'a> ColumnView<'a> {
         focused: bool
     ) {
         let column_len = self.table.len(state, config);
-        let block_name = format!(
-            "{}{}{}",
-            self.column,
-            optional_text(column_len, area.height <= column_len as u16,),
-            optional_text("immutable", self.immutable)
-        );
+        let len_msg = (area.height <= column_len as u16)
+            .then_some(format!(" ({column_len})"))
+            .unwrap_or_default();
+        let block_name = format!("{}{len_msg}", self.column);
 
         Line::from(block_name).centered().render(area, buf);
         let style = if focused {
-            Style::new().fg(self.color).reversed()
+            Style::new().reversed()
         } else {
-            Style::new().fg(self.color).on_black()
+            Style::new().on_black()
         }
-        .bold();
+        .bold()
+        .fg(self.color);
 
         buf.set_style(Rect { height: 1, ..area }, style);
         let area = Rect {
